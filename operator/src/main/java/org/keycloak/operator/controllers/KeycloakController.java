@@ -64,6 +64,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
                 .withLabelSelector(Constants.DEFAULT_LABELS_AS_STRING)
                 .withNamespaces(namespace)
                 .withSecondaryToPrimaryMapper(Mappers.fromOwnerReference())
+                .withOnUpdateFilter(new MetadataAwareOnUpdateFilter<>())
                 .build();
 
         InformerConfiguration<Service> servicesIC = InformerConfiguration
@@ -71,6 +72,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
                 .withLabelSelector(Constants.DEFAULT_LABELS_AS_STRING)
                 .withNamespaces(namespace)
                 .withSecondaryToPrimaryMapper(Mappers.fromOwnerReference())
+                .withOnUpdateFilter(new MetadataAwareOnUpdateFilter<>())
                 .build();
 
         InformerConfiguration<Ingress> ingressesIC = InformerConfiguration
@@ -78,6 +80,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
                 .withLabelSelector(Constants.DEFAULT_LABELS_AS_STRING)
                 .withNamespaces(namespace)
                 .withSecondaryToPrimaryMapper(Mappers.fromOwnerReference())
+                .withOnUpdateFilter(new MetadataAwareOnUpdateFilter<>())
                 .build();
 
         EventSource statefulSetEvent = new InformerEventSource<>(statefulSetIC, context);
@@ -87,8 +90,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
         return EventSourceInitializer.nameEventSources(statefulSetEvent,
                 servicesEvent,
                 ingressesEvent,
-                WatchedSecretsStore.getStoreEventSource(client, namespace),
-                WatchedSecretsStore.getWatchedSecretsEventSource(client, namespace));
+                WatchedSecrets.getWatchedSecretsEventSource(client, namespace));
     }
 
     @Override
@@ -106,14 +108,8 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
         // TODO use caches in secondary resources; this is a workaround for https://github.com/java-operator-sdk/java-operator-sdk/issues/830
         // KeycloakDeployment deployment = new KeycloakDeployment(client, config, kc, context.getSecondaryResource(Deployment.class).orElse(null));
         var kcDeployment = new KeycloakDeployment(client, config, kc, null, kcAdminSecret.getName());
-        var watchedSecrets = new WatchedSecretsStore(kcDeployment.getConfigSecretsNames(), client, kc);
         kcDeployment.createOrUpdateReconciled();
-        if (watchedSecrets.changesDetected()) {
-            Log.info("Config Secrets modified, restarting deployment");
-            kcDeployment.rollingRestart();
-        }
         kcDeployment.updateStatus(statusAggregator);
-        watchedSecrets.createOrUpdateReconciled();
 
         var kcService = new KeycloakService(client, kc);
         kcService.updateStatus(statusAggregator);

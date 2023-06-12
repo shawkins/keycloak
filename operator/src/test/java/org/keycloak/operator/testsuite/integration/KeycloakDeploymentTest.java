@@ -109,6 +109,7 @@ public class KeycloakDeploymentTest extends BaseOperatorTest {
             deployKeycloak(k8sclient, kc, false);
 
             Awaitility.await()
+                    .timeout(Duration.ofMinutes(2))
                     .during(Duration.ofSeconds(15)) // check if the Deployment is stable
                     .untilAsserted(() -> {
                         var c = k8sclient.apps().statefulSets().inNamespace(namespace).withName(deploymentName).get()
@@ -116,7 +117,7 @@ public class KeycloakDeploymentTest extends BaseOperatorTest {
                         assertThat(c.getImage()).isEqualTo("quay.io/keycloak/non-existing-keycloak");
                         assertThat(c.getEnv().stream()
                                 .anyMatch(e -> e.getName().equals(KeycloakDistConfigurator.getKeycloakOptionEnvVarName(dbConf.getName()))
-                                        && e.getValue().equals(dbConf.getValue())))
+                                        && dbConf.getValue().equals(e.getValue())))
                                 .isTrue();
                     });
 
@@ -221,10 +222,10 @@ public class KeycloakDeploymentTest extends BaseOperatorTest {
 
             deployment.getMetadata().getLabels().putAll(labels);
             deployment.getSpec().getTemplate().getSpec().getContainers().get(0).setEnv(List.of(flandersEnvVar));
-            k8sclient.resource(deployment).forceConflicts().serverSideApply();
+            k8sclient.resource(deployment).update();
 
             Awaitility.await()
-                    .atMost(5, MINUTES)
+                    .atMost(1, MINUTES)
                     .pollDelay(1, SECONDS)
                     .ignoreExceptions()
                     .untilAsserted(() -> {

@@ -25,7 +25,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.operator.Constants;
-import org.keycloak.operator.controllers.WatchedSecretsStore;
+import org.keycloak.operator.controllers.WatchedSecrets;
 import org.keycloak.operator.crds.v2alpha1.deployment.Keycloak;
 import org.keycloak.operator.crds.v2alpha1.deployment.KeycloakStatusCondition;
 import org.keycloak.operator.crds.v2alpha1.deployment.ValueOrSecret;
@@ -58,25 +58,25 @@ public class WatchedSecretsTest extends BaseOperatorTest {
             Secret dbSecret = getDbSecret();
             Secret tlsSecret = getTlsSecret();
 
-            assertThat(dbSecret.getMetadata().getLabels()).containsEntry(Constants.KEYCLOAK_COMPONENT_LABEL, WatchedSecretsStore.WATCHED_SECRETS_LABEL_VALUE);
-            assertThat(tlsSecret.getMetadata().getLabels()).containsEntry(Constants.KEYCLOAK_COMPONENT_LABEL, WatchedSecretsStore.WATCHED_SECRETS_LABEL_VALUE);
+            assertThat(dbSecret.getMetadata().getLabels()).containsEntry(Constants.KEYCLOAK_COMPONENT_LABEL, WatchedSecrets.WATCHED_SECRETS_LABEL_VALUE);
+            assertThat(tlsSecret.getMetadata().getLabels()).containsEntry(Constants.KEYCLOAK_COMPONENT_LABEL, WatchedSecrets.WATCHED_SECRETS_LABEL_VALUE);
 
             Log.info("Updating DB Secret, expecting restart");
             testDeploymentRestarted(Set.of(kc), Set.of(), () -> {
                 dbSecret.getData().put(UUID.randomUUID().toString(), "YmxhaGJsYWg=");
-                k8sclient.resource(dbSecret).forceConflicts().serverSideApply();
+                k8sclient.resource(dbSecret).update();
             });
 
             Log.info("Updating TLS Secret, expecting restart");
             testDeploymentRestarted(Set.of(kc), Set.of(), () -> {
                 tlsSecret.getData().put(UUID.randomUUID().toString(), "YmxhaGJsYWg=");
-                k8sclient.resource(tlsSecret).forceConflicts().serverSideApply();
+                k8sclient.resource(tlsSecret).update();
             });
 
             Log.info("Updating DB Secret metadata, NOT expecting restart");
             testDeploymentRestarted(Set.of(), Set.of(kc), () -> {
                 dbSecret.getMetadata().getLabels().put(UUID.randomUUID().toString(), "YmxhaGJsYWg");
-                k8sclient.resource(dbSecret).forceConflicts().serverSideApply();
+                k8sclient.resource(dbSecret).update();
             });
         } catch (Exception e) {
             savePodLogs();
@@ -98,7 +98,7 @@ public class WatchedSecretsTest extends BaseOperatorTest {
 
             dbSecret.getData().put("username",
                     Base64.getEncoder().encodeToString(username.getBytes()));
-            k8sclient.resource(dbSecret).forceConflicts().serverSideApply();
+            k8sclient.resource(dbSecret).update();
 
             Awaitility.await()
                     .ignoreExceptions()
@@ -146,7 +146,7 @@ public class WatchedSecretsTest extends BaseOperatorTest {
             testDeploymentRestarted(Set.of(), Set.of(kc), () -> {
                 var dbSecret = getDbSecret();
                 dbSecret.getMetadata().getLabels().put(UUID.randomUUID().toString(), "YmxhaGJsYWg");
-                k8sclient.resource(dbSecret).forceConflicts().serverSideApply();
+                k8sclient.resource(dbSecret).update();
             });
 
             Awaitility.await().untilAsserted(() -> {
@@ -180,7 +180,7 @@ public class WatchedSecretsTest extends BaseOperatorTest {
             Log.info("Updating DB Secret, expecting restart of both KCs");
             testDeploymentRestarted(Set.of(kc1, kc2), Set.of(), () -> {
                 dbSecret.getData().put(UUID.randomUUID().toString(), "YmxhaGJsYWg=");
-                k8sclient.resource(dbSecret).forceConflicts().serverSideApply();
+                k8sclient.resource(dbSecret).update();
             });
 
             Log.info("Updating KC1 to not to rely on DB Secret");
@@ -192,7 +192,7 @@ public class WatchedSecretsTest extends BaseOperatorTest {
             Log.info("Updating DB Secret, expecting restart of just KC2");
             testDeploymentRestarted(Set.of(kc2), Set.of(kc1), () -> {
                 dbSecret.getData().put(UUID.randomUUID().toString(), "YmxhaGJsYWg=");
-                k8sclient.resource(dbSecret).forceConflicts().serverSideApply();
+                k8sclient.resource(dbSecret).update();
             });
         }
         catch (Exception e) {

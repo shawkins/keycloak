@@ -24,14 +24,11 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
 import io.quarkus.test.junit.QuarkusTest;
+
 import org.junit.jupiter.api.Test;
 import org.keycloak.operator.Config;
 import org.keycloak.operator.controllers.KeycloakDeployment;
-import org.keycloak.operator.crds.v2alpha1.deployment.Keycloak;
-import org.keycloak.operator.crds.v2alpha1.deployment.KeycloakSpecBuilder;
-import org.keycloak.operator.crds.v2alpha1.deployment.spec.HostnameSpecBuilder;
-import org.keycloak.operator.crds.v2alpha1.deployment.spec.HttpSpecBuilder;
-import org.keycloak.operator.crds.v2alpha1.deployment.spec.UnsupportedSpec;
+import org.keycloak.operator.crds.v2alpha1.deployment.KeycloakBuilder;
 
 import java.util.Collections;
 import java.util.Map;
@@ -63,15 +60,10 @@ public class PodTemplateTest {
                 };
             }
         };
-        var kc = new Keycloak();
-
-        var httpSpec = new HttpSpecBuilder().withTlsSecret("example-tls-secret").build();
-        var hostnameSpec = new HostnameSpecBuilder().withHostname("example.com").build();
-
-        kc.setSpec(new KeycloakSpecBuilder().withUnsupported(new UnsupportedSpec(podTemplate))
-                .withHttpSpec(httpSpec)
-                .withHostnameSpec(hostnameSpec)
-                .build());
+        var kc = new KeycloakBuilder().withNewMetadata().withName("kc").withNamespace("ns").endMetadata()
+                .withNewSpec().withNewUnsupported().withPodTemplate(podTemplate).endUnsupported()
+                    .withNewHttpSpec().withTlsSecret("example-tls-secret").endHttpSpec()
+                    .withNewHostnameSpec().withHostname("example.com").endHostnameSpec().endSpec().build();
 
         var deployment = new KeycloakDeployment(null, config, kc, existingDeployment, "dummy-admin");
         return (StatefulSet) deployment.getReconciledResource().get();
@@ -256,7 +248,7 @@ public class PodTemplateTest {
     }
 
     @Test
-    public void testAnnotationsAreMerged() {
+    public void testAnnotationsAreNotMerged() {
         // Arrange
         var existingDeployment = new StatefulSetBuilder()
                 .withNewSpec()
@@ -278,7 +270,6 @@ public class PodTemplateTest {
         var podTemplate = getDeployment(additionalPodTemplate, existingDeployment).getSpec().getTemplate();
 
         // Assert
-        assertThat(podTemplate.getMetadata().getAnnotations()).containsEntry("one", "1");
         assertThat(podTemplate.getMetadata().getAnnotations()).containsEntry("two", "2");
     }
 }

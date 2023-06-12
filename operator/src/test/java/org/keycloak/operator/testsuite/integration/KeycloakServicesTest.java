@@ -26,6 +26,7 @@ import org.keycloak.operator.controllers.KeycloakDiscoveryService;
 import org.keycloak.operator.controllers.KeycloakService;
 import org.keycloak.operator.testsuite.utils.K8sUtils;
 
+import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +43,7 @@ public class KeycloakServicesTest extends BaseOperatorTest {
         Log.info("Trying to delete the service");
         assertThat(serviceSelector.delete()).isNotNull();
         Awaitility.await()
+                .timeout(Duration.ofMinutes(1))
                 .untilAsserted(() -> assertThat(serviceSelector.get()).isNotNull());
 
         K8sUtils.waitForKeycloakToBeReady(k8sclient, kc); // wait for reconciler to calm down to avoid race condititon
@@ -57,11 +59,12 @@ public class KeycloakServicesTest extends BaseOperatorTest {
 
         currentService.getMetadata().getLabels().putAll(labels);
         currentService.getSpec().setSessionAffinity("ClientIP");
-        
+
         currentService.getMetadata().setResourceVersion(null);
-        k8sclient.resource(currentService).forceConflicts().serverSideApply();
+        k8sclient.resource(currentService).update();
 
         Awaitility.await()
+                .timeout(Duration.ofMinutes(1))
                 .untilAsserted(() -> {
                     var s = serviceSelector.get();
                     assertThat(s.getMetadata().getLabels().entrySet().containsAll(labels.entrySet())).isTrue(); // additional labels should not be overwritten
@@ -82,6 +85,7 @@ public class KeycloakServicesTest extends BaseOperatorTest {
         Log.info("Trying to delete the discovery service");
         assertThat(discoveryServiceSelector.delete()).isNotNull();
         Awaitility.await()
+                .timeout(Duration.ofMinutes(1))
                 .untilAsserted(() -> assertThat(discoveryServiceSelector.get()).isNotNull());
 
         K8sUtils.waitForKeycloakToBeReady(k8sclient, kc); // wait for reconciler to calm down to avoid race condititon
@@ -101,6 +105,7 @@ public class KeycloakServicesTest extends BaseOperatorTest {
         discoveryServiceSelector.edit(ignored -> currentDiscoveryService);
 
         Awaitility.await()
+                .timeout(Duration.ofMinutes(1))
                 .untilAsserted(() -> {
                     var ds = discoveryServiceSelector.get();
                     assertThat(ds.getMetadata().getLabels().entrySet().containsAll(labels.entrySet())).isTrue(); // additional labels should not be overwritten
