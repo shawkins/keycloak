@@ -23,6 +23,7 @@ import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.Serialization;
 import io.javaoperatorsdk.operator.api.config.informer.InformerConfiguration;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
@@ -43,6 +44,8 @@ import java.util.stream.Collectors;
  * Provides a mechanism to track secrets
  *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
+ *
+ * JOSDK TODO: should watch via owner references instead?
  */
 public class WatchedSecrets {
     public static final String COMPONENT = "secrets-store";
@@ -55,12 +58,12 @@ public class WatchedSecrets {
     // key is name of the secret
     private final List<Secret> currentSecrets;
 
-    public WatchedSecrets(List<String> desiredWatchedSecretsNames, KubernetesClient client, Keycloak kc, StatefulSet baseDeployment) {
+    public WatchedSecrets(List<String> desiredWatchedSecretsNames, KubernetesClient client, Keycloak kc, StatefulSet baseDeployment, Context<?> context) {
         this.client = client;
         // instead of being proactive in removing the old store, we'll just let it get cleaned up via the owner reference
         // client.resources(Secret.class).inNamespace(kc.getMetadata().getNamespace()).withName(kc.getMetadata().getName() + STORE_SUFFIX);
         this.keycloak = kc;
-        currentSecrets = fetchCurrentSecrets(desiredWatchedSecretsNames);
+        currentSecrets = fetchCurrentSecrets(desiredWatchedSecretsNames, context);
         baseDeployment.getMetadata().getAnnotations().put(Constants.KEYCLOAK_WATCHING_ANNOTATION, desiredWatchedSecretsNames.stream().collect(Collectors.joining(";")));
         // this will trigger a rolling update if it is different
         baseDeployment.getSpec().getTemplate().getMetadata().getAnnotations().put(Constants.KEYCLOAK_WATCHED_SECRET_HASH_ANNOTATION, getSecretHash());
@@ -93,9 +96,11 @@ public class WatchedSecrets {
         }
     }
 
-    private List<Secret> fetchCurrentSecrets(List<String> secretsNames) {
+    private List<Secret> fetchCurrentSecrets(List<String> secretsNames, Context<?> context) {
+        String namespace = keycloak.getMetadata().getNamespace();
         return secretsNames.stream()
-                .map(n -> client.secrets().inNamespace(keycloak.getMetadata().getNamespace()).withName(n).require())
+                .map(n -> OperatorManagedResource.fetch(context, Secret.class, n, namespace)
+                        .orElseGet(() -> client.secrets().inNamespace(namespace).withName(n).require()))
                 .collect(Collectors.toList());
     }
 
@@ -115,7 +120,9 @@ public class WatchedSecrets {
                 .withLabelSelector(Constants.KEYCLOAK_COMPONENT_LABEL + "=" + WATCHED_SECRETS_LABEL_VALUE)
                 .withNamespaces(namespace)
                 .withSecondaryToPrimaryMapper(secret -> {
-                    // this should be replacable by a primary cache lookup
+                    // JOSDK TODO - should this handler have operations like lookup or deletes, or should that be deferred to something else
+
+                    // JOSDK TODO - this should be replacable by a primary cache lookup, but don't see a way to get primary resources
                     var statefulSets = client.resources(StatefulSet.class).inNamespace(namespace).withLabels(Constants.DEFAULT_LABELS).list().getItems();
                     // find all CR names that are watching this Secret
                     var ret = statefulSets.stream()

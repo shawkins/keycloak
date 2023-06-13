@@ -19,6 +19,7 @@ package org.keycloak.operator.controllers;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import org.keycloak.operator.Constants;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.IngressSpec;
@@ -30,20 +31,21 @@ import java.util.Optional;
 
 import static org.keycloak.operator.crds.v2alpha1.CRDUtils.isTlsConfigured;
 
-public class KeycloakIngress extends OperatorManagedResource implements StatusUpdater<KeycloakStatusAggregator> {
+public class KeycloakIngress extends OperatorManagedResource<Ingress, KeycloakStatusAggregator> {
 
-    private final Ingress existingIngress;
+    private Ingress existingIngress;
     private final Keycloak keycloak;
 
     public KeycloakIngress(KubernetesClient client, Keycloak keycloakCR) {
         super(client, keycloakCR);
         this.keycloak = keycloakCR;
-        this.existingIngress = fetchExistingIngress();
     }
 
     @Override
-    protected Optional<HasMetadata> getReconciledResource() {
+    protected Optional<HasMetadata> getReconciledResource(Context<?> context, Ingress current, KeycloakStatusAggregator statusBuilder) {
+        existingIngress = current;
         IngressSpec ingressSpec = keycloak.getSpec().getIngressSpec();
+        updateStatus(statusBuilder);
         if (ingressSpec != null && !ingressSpec.isIngressEnabled()) {
             if (existingIngress != null && existingIngress.hasOwnerReferenceFor(keycloak)) {
                 deleteExistingIngress();
@@ -89,7 +91,6 @@ public class KeycloakIngress extends OperatorManagedResource implements StatusUp
                     .addNewRule()
                         .withNewHttp()
                             .addNewPath()
-                                .withPath("")
                                 .withPathType("ImplementationSpecific")
                                 .withNewBackend()
                                     .withNewService()
@@ -117,17 +118,6 @@ public class KeycloakIngress extends OperatorManagedResource implements StatusUp
         client.resource(existingIngress).delete();
     }
 
-    protected Ingress fetchExistingIngress() {
-        return client
-                .network()
-                .v1()
-                .ingresses()
-                .inNamespace(getNamespace())
-                .withName(getName())
-                .get();
-    }
-
-    @Override
     public void updateStatus(KeycloakStatusAggregator status) {
         IngressSpec ingressSpec = keycloak.getSpec().getIngressSpec();
         if (ingressSpec == null) {
@@ -142,5 +132,10 @@ public class KeycloakIngress extends OperatorManagedResource implements StatusUp
     @Override
     public String getName() {
         return cr.getMetadata().getName() + Constants.KEYCLOAK_INGRESS_SUFFIX;
+    }
+
+    @Override
+    protected Class<Ingress> getType() {
+        return Ingress.class;
     }
 }

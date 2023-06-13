@@ -7,11 +7,14 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
+
 import org.keycloak.operator.crds.v2alpha1.realmimport.KeycloakRealmImport;
+import org.keycloak.operator.crds.v2alpha1.realmimport.KeycloakRealmImportStatusBuilder;
 
 import java.util.Optional;
 
-public class KeycloakRealmImportSecret extends OperatorManagedResource {
+public class KeycloakRealmImportSecret extends OperatorManagedResource<Secret, KeycloakRealmImportStatusBuilder> {
 
     private final KeycloakRealmImport realmCR;
     private final String secretName;
@@ -25,7 +28,9 @@ public class KeycloakRealmImportSecret extends OperatorManagedResource {
     }
 
     @Override
-    protected Optional<HasMetadata> getReconciledResource() {
+    protected Optional<HasMetadata> getReconciledResource(Context<?> context,
+            Secret current, KeycloakRealmImportStatusBuilder statusBuilder) {
+        // JOSDK TODO: this isn't a watched resource, and we don't use the current state at all
         return Optional.of(createSecret());
     }
 
@@ -56,5 +61,10 @@ public class KeycloakRealmImportSecret extends OperatorManagedResource {
 
     public String getSecretName() {
         return secretName;
+    }
+
+    @Override
+    protected Class<Secret> getType() {
+        return Secret.class;
     }
 }

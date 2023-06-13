@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.keycloak.operator.Config;
 import org.keycloak.operator.controllers.KeycloakDeployment;
 import org.keycloak.operator.crds.v2alpha1.deployment.KeycloakBuilder;
+import org.keycloak.operator.crds.v2alpha1.deployment.KeycloakStatusAggregator;
 
 import java.util.Collections;
 import java.util.Map;
@@ -65,8 +66,8 @@ public class PodTemplateTest {
                     .withNewHttpSpec().withTlsSecret("example-tls-secret").endHttpSpec()
                     .withNewHostnameSpec().withHostname("example.com").endHostnameSpec().endSpec().build();
 
-        var deployment = new KeycloakDeployment(null, config, kc, existingDeployment, "dummy-admin");
-        return (StatefulSet) deployment.getReconciledResource().get();
+        var deployment = new KeycloakDeployment(null, config, kc, "dummy-admin");
+        return (StatefulSet) deployment.getReconciledResource(null, existingDeployment, new KeycloakStatusAggregator(1L)).get();
     }
 
     private StatefulSet getDeployment(PodTemplateSpec podTemplate) {

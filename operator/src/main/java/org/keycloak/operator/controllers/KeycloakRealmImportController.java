@@ -76,11 +76,10 @@ public class KeycloakRealmImportController implements Reconciler<KeycloakRealmIm
         var statusBuilder = new KeycloakRealmImportStatusBuilder();
 
         var realmImportSecret = new KeycloakRealmImportSecret(client, realm, jsonMapper);
-        realmImportSecret.createOrUpdateReconciled();
+        realmImportSecret.createOrUpdateReconciled(context, statusBuilder);
 
         var realmImportJob = new KeycloakRealmImportJob(client, realm, realmImportSecret.getSecretName());
-        realmImportJob.createOrUpdateReconciled();
-        realmImportJob.updateStatus(statusBuilder);
+        realmImportJob.createOrUpdateReconciled(context, statusBuilder);
 
         var status = statusBuilder.build();
 

@@ -29,6 +29,7 @@ import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.KubernetesResourceUtil;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.quarkus.logging.Log;
 
 import org.keycloak.operator.crds.v2alpha1.deployment.Keycloak;
@@ -40,12 +41,12 @@ import java.util.Optional;
 
 import static org.keycloak.operator.controllers.KeycloakDistConfigurator.getKeycloakOptionEnvVarName;
 
-public class KeycloakRealmImportJob extends OperatorManagedResource {
+public class KeycloakRealmImportJob extends OperatorManagedResource<Job, KeycloakRealmImportStatusBuilder> {
 
-    private final Keycloak keycloak;
+    private Keycloak keycloak;
     private final KeycloakRealmImport realmCR;
-    private final StatefulSet existingDeployment;
-    private final Job existingJob;
+    private StatefulSet existingDeployment;
+    private Job existingJob;
     private final String secretName;
     private final String volumeName;
 
@@ -54,14 +55,14 @@ public class KeycloakRealmImportJob extends OperatorManagedResource {
         this.realmCR = realmCR;
         this.secretName = secretName;
         this.volumeName = KubernetesResourceUtil.sanitizeName(secretName + "-volume");
-
-        this.existingJob = fetchExisting(Job.class, getName());
-        this.existingDeployment = fetchExisting(StatefulSet.class, getKeycloakName());
-        this.keycloak = fetchExisting(Keycloak.class, getKeycloakName());
     }
 
     @Override
-    protected Optional<HasMetadata> getReconciledResource() {
+    protected Optional<HasMetadata> getReconciledResource(Context<?> context, Job current, KeycloakRealmImportStatusBuilder statusBuilder) {
+        this.existingDeployment = fetch(context, StatefulSet.class, getKeycloakName(), getNamespace()).orElse(null);
+        this.keycloak = fetch(context, Keycloak.class, getKeycloakName(), getNamespace()).orElse(null);
+        this.existingJob = current;
+        updateStatus(statusBuilder);
         if (existingDeployment == null) {
             return Optional.empty(); // handled in the status
         } else if (existingJob == null) {
@@ -71,14 +72,6 @@ public class KeycloakRealmImportJob extends OperatorManagedResource {
             Log.info("Job already available");
             return Optional.empty();
         }
-    }
-
-    private <T extends HasMetadata> T fetchExisting(Class<T> type, String name) {
-        return client
-                .resources(type)
-                .inNamespace(getNamespace())
-                .withName(name)
-                .get();
     }
 
     private Job buildJob(PodTemplateSpec keycloakPodTemplate) {
@@ -186,7 +179,7 @@ public class KeycloakRealmImportJob extends OperatorManagedResource {
             } else if (oldStatus.getSucceeded() != null && oldStatus.getSucceeded() > 0) {
                 if (!lastReportedStatus.isDone()) {
                     Log.info("Job finished performing a rolling restart of the deployment");
-                    rollingRestart(); // could be based upon a hash annotation on the deployment instead
+                    rollingRestart(); // JOSDK TODO could be based upon a hash annotation on the deployment instead
                 }
                 status.addDone();
             } else if (oldStatus.getFailed() != null && oldStatus.getFailed() > 0) {
@@ -213,5 +206,10 @@ public class KeycloakRealmImportJob extends OperatorManagedResource {
                 .inNamespace(getNamespace())
                 .withName(getKeycloakName())
                 .rolling().restart();
+    }
+
+    @Override
+    protected Class<Job> getType() {
+        return Job.class;
     }
 }

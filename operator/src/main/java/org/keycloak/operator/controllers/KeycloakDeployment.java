@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.quarkus.logging.Log;
 
 import org.keycloak.common.util.CollectionUtil;
@@ -53,13 +54,13 @@ import java.util.stream.Collectors;
 
 import static org.keycloak.operator.crds.v2alpha1.CRDUtils.isTlsConfigured;
 
-public class KeycloakDeployment extends OperatorManagedResource implements StatusUpdater<KeycloakStatusAggregator> {
+public class KeycloakDeployment extends OperatorManagedResource<StatefulSet, KeycloakStatusAggregator> {
 
     private final Config operatorConfig;
     private final KeycloakDistConfigurator distConfigurator;
 
     private final Keycloak keycloakCR;
-    private final StatefulSet existingDeployment;
+    private StatefulSet existingDeployment;
     private final StatefulSet baseDeployment;
     private final String adminSecretName;
 
@@ -69,19 +70,11 @@ public class KeycloakDeployment extends OperatorManagedResource implements Statu
 
     private WatchedSecrets watchedSecrets;
 
-    public KeycloakDeployment(KubernetesClient client, Config config, Keycloak keycloakCR, StatefulSet existingDeployment, String adminSecretName) {
+    public KeycloakDeployment(KubernetesClient client, Config config, Keycloak keycloakCR, String adminSecretName) {
         super(client, keycloakCR);
         this.operatorConfig = config;
         this.keycloakCR = keycloakCR;
         this.adminSecretName = adminSecretName;
-
-        if (existingDeployment != null) {
-            Log.info("Existing Deployment provided by controller");
-            this.existingDeployment = existingDeployment;
-        } else {
-            Log.info("Trying to fetch existing Deployment from the API");
-            this.existingDeployment = fetchExistingDeployment();
-        }
 
         this.baseDeployment = createBaseDeployment();
         this.distConfigurator = configureDist();
@@ -89,7 +82,8 @@ public class KeycloakDeployment extends OperatorManagedResource implements Statu
     }
 
     @Override
-    public Optional<HasMetadata> getReconciledResource() {
+    public Optional<HasMetadata> getReconciledResource(Context<?> context, StatefulSet current, KeycloakStatusAggregator statusBuilder) {
+        existingDeployment = current;
         if (existingDeployment == null) {
             Log.info("No existing Deployment found, using the default");
         }
@@ -100,26 +94,18 @@ public class KeycloakDeployment extends OperatorManagedResource implements Statu
         }
         List<String> configSecretsNames = getConfigSecretsNames();
         if (client != null && !configSecretsNames.isEmpty()) {
-            watchedSecrets = new WatchedSecrets(configSecretsNames, client, keycloakCR, this.baseDeployment);
+            watchedSecrets = new WatchedSecrets(configSecretsNames, client, keycloakCR, this.baseDeployment, context);
         }
+        updateStatus(statusBuilder);
         return Optional.of(baseDeployment);
     }
 
     @Override
-    public void createOrUpdateReconciled() {
-        super.createOrUpdateReconciled();
+    public void createOrUpdateReconciled(Context<?> context, KeycloakStatusAggregator statusBuilder) {
+        super.createOrUpdateReconciled(context, statusBuilder);
         if (watchedSecrets != null) {
             watchedSecrets.addLabelsToWatchedSecrets();
         }
-    }
-
-    private StatefulSet fetchExistingDeployment() {
-        return client
-                .apps()
-                .statefulSets()
-                .inNamespace(getNamespace())
-                .withName(getName())
-                .get();
     }
 
     public void validatePodTemplate(KeycloakStatusAggregator status) {
@@ -493,7 +479,6 @@ public class KeycloakDeployment extends OperatorManagedResource implements Statu
         return envVars;
     }
 
-    @Override
     public void updateStatus(KeycloakStatusAggregator status) {
         status.apply(b -> b.withSelector(Constants.DEFAULT_LABELS_AS_STRING));
         validatePodTemplate(status);
@@ -597,5 +582,10 @@ public class KeycloakDeployment extends OperatorManagedResource implements Statu
         } else {
             return null;
         }
+    }
+
+    @Override
+    protected Class<StatefulSet> getType() {
+        return StatefulSet.class;
     }
 }

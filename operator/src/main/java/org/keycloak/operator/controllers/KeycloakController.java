@@ -100,27 +100,23 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
 
         Log.infof("--- Reconciling Keycloak: %s in namespace: %s", kcName, namespace);
 
+        // JOSDK TODO: determine the replacement pattern for status building
         var statusAggregator = new KeycloakStatusAggregator(kc.getStatus(), kc.getMetadata().getGeneration());
 
         var kcAdminSecret = new KeycloakAdminSecret(client, kc);
-        kcAdminSecret.createOrUpdateReconciled();
+        kcAdminSecret.createOrUpdateReconciled(context, statusAggregator);
 
-        // TODO use caches in secondary resources; this is a workaround for https://github.com/java-operator-sdk/java-operator-sdk/issues/830
-        // KeycloakDeployment deployment = new KeycloakDeployment(client, config, kc, context.getSecondaryResource(Deployment.class).orElse(null));
-        var kcDeployment = new KeycloakDeployment(client, config, kc, null, kcAdminSecret.getName());
-        kcDeployment.createOrUpdateReconciled();
-        kcDeployment.updateStatus(statusAggregator);
+        // JOSDK TODO: use a different mechanism to provide the adminSecret name
+        var kcDeployment = new KeycloakDeployment(client, config, kc, kcAdminSecret.getName());
+        kcDeployment.createOrUpdateReconciled(context, statusAggregator);
 
         var kcService = new KeycloakService(client, kc);
-        kcService.updateStatus(statusAggregator);
-        kcService.createOrUpdateReconciled();
+        kcService.createOrUpdateReconciled(context, statusAggregator);
         var kcDiscoveryService = new KeycloakDiscoveryService(client, kc);
-        kcDiscoveryService.updateStatus(statusAggregator);
-        kcDiscoveryService.createOrUpdateReconciled();
+        kcDiscoveryService.createOrUpdateReconciled(context, statusAggregator);
 
         var kcIngress = new KeycloakIngress(client, kc);
-        kcIngress.updateStatus(statusAggregator);
-        kcIngress.createOrUpdateReconciled();
+        kcIngress.createOrUpdateReconciled(context, statusAggregator);
 
         var status = statusAggregator.build();
 

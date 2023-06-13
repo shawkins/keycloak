@@ -20,6 +20,7 @@ package org.keycloak.operator.crds.v2alpha1.realmimport;
 import java.util.ArrayList;
 import java.util.List;
 
+// JOSDK TODO this should be based upon the prior status
 public class KeycloakRealmImportStatusBuilder {
     private final KeycloakRealmImportStatusCondition readyCondition;
     private final KeycloakRealmImportStatusCondition startedCondition;

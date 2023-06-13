@@ -26,6 +26,7 @@ import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import org.junit.jupiter.api.Test;
 import org.keycloak.operator.controllers.KeycloakIngress;
 import org.keycloak.operator.crds.v2alpha1.deployment.Keycloak;
+import org.keycloak.operator.crds.v2alpha1.deployment.KeycloakStatusAggregator;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.IngressSpec;
 import org.keycloak.operator.crds.v2alpha1.deployment.spec.IngressSpecBuilder;
 import org.keycloak.operator.testsuite.utils.K8sUtils;
@@ -86,9 +87,8 @@ public class IngressLogicTest {
             super(null, getKeycloak(tlsConfigured, ingressSpec));
         }
 
-        @Override
         public Optional<HasMetadata> getReconciledResource() {
-            return super.getReconciledResource();
+            return super.getReconciledResource(null, fetchExistingIngress(), new KeycloakStatusAggregator(1L));
         }
 
         public boolean reconciled() {
@@ -99,7 +99,6 @@ public class IngressLogicTest {
             return deleted;
         }
 
-        @Override
         protected Ingress fetchExistingIngress() {
             if (ingressExists) {
 
@@ -226,7 +225,7 @@ public class IngressLogicTest {
         assertEquals("passthrough", reconciled.get().getMetadata().getAnnotations().get("route.openshift.io/termination"));
         assertEquals("another-value", reconciled.get().getMetadata().getAnnotations().get(EXISTING_ANNOTATION_KEY));
     }
-    
+
     @Test
     public void testIngressSpecDefinedWithoutClassName() {
         var kc = new MockKeycloakIngress(true, new IngressSpec());
@@ -234,7 +233,7 @@ public class IngressLogicTest {
         Ingress ingress = reconciled.map(Ingress.class::cast).orElseThrow();
         assertNull(ingress.getSpec().getIngressClassName());
     }
-    
+
     @Test
     public void testIngressSpecDefinedWithClassName() {
         var kc = new MockKeycloakIngress(true, new IngressSpecBuilder().withIngressClassName("my-class").build());

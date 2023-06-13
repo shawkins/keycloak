@@ -23,7 +23,11 @@ import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.Serialization;
+import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.processing.event.ResourceID;
+import io.javaoperatorsdk.operator.processing.event.source.informer.InformerEventSource;
 import io.quarkus.logging.Log;
+
 import org.keycloak.operator.Constants;
 
 import java.util.Collections;
@@ -36,7 +40,7 @@ import java.util.Optional;
  *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public abstract class OperatorManagedResource {
+public abstract class OperatorManagedResource<T extends HasMetadata, S> {
     protected KubernetesClient client;
     protected CustomResource<?, ?> cr;
 
@@ -45,10 +49,11 @@ public abstract class OperatorManagedResource {
         this.cr = cr;
     }
 
-    protected abstract Optional<HasMetadata> getReconciledResource();
+    protected abstract Optional<HasMetadata> getReconciledResource(Context<?> context, T current, S statusBuilder);
 
-    public void createOrUpdateReconciled() {
-        getReconciledResource().ifPresent(resource -> {
+    public void createOrUpdateReconciled(Context<?> context, S statusBuilder) {
+        Optional<T> cachedValue = fetch(context, getType(), getName(), getNamespace());
+        getReconciledResource(context, cachedValue.orElse(null), statusBuilder).ifPresent(resource -> {
             try {
                 setDefaultLabels(resource);
                 setOwnerReferences(resource);
@@ -62,6 +67,18 @@ public abstract class OperatorManagedResource {
                 throw e;
             }
         });
+    }
+
+    static <R extends HasMetadata> Optional<R> fetch(Context<?> context, Class<R> type, String name, String namespace) {
+        // should be more precise over sources - presumably with dependent each will have their own source
+        try {
+            InformerEventSource<R, ?> source = (InformerEventSource<R, ?>) context.eventSourceRetriever().getResourceEventSourceFor(type);
+            // don't see a great way to do this via other methods
+            return source.getCachedValue(new ResourceID(name, namespace));
+        } catch (Exception e) {
+            // not a valid source, just go directly against the client
+            return Optional.ofNullable(context.getClient().resources(type).inNamespace(namespace).withName(name).get());
+        }
     }
 
     protected void setDefaultLabels(HasMetadata resource) {
@@ -92,4 +109,6 @@ public abstract class OperatorManagedResource {
     }
 
     protected abstract String getName();
+
+    protected abstract Class<T> getType();
 }
