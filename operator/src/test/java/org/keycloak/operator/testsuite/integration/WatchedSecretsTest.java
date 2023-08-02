@@ -22,6 +22,7 @@ import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
+
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -230,7 +231,7 @@ public class WatchedSecretsTest extends BaseOperatorTest {
         kc.getSpec().getDatabaseSpec().setUsernameSecret(null);
         kc.getSpec().getDatabaseSpec().setPasswordSecret(null);
 
-        var username = new ValueOrSecret("db-username", "postgres");
+        var username = new ValueOrSecret("db-username", "kc-user");
         var password = new ValueOrSecret("db-password", "testpassword");
 
         kc.getSpec().getAdditionalOptions().remove(username);
