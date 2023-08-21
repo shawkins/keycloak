@@ -34,18 +34,26 @@ abs_path () {
   fi
 }
 
-SERVER_OPTS="-Dkc.home.dir='$(abs_path '..')'"
-SERVER_OPTS="$SERVER_OPTS -Djboss.server.config.dir='$(abs_path '../conf')'"
-SERVER_OPTS="$SERVER_OPTS -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-SERVER_OPTS="$SERVER_OPTS -Dquarkus-log-max-startup-records=10000"
-CLASSPATH_OPTS="'$(abs_path "../lib/quarkus-run.jar")'"
+# allows for the usage of multiple arrays while being posix compliant, see http://www.etalabs.net/sh_tricks.html
+save () {
+  for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
+  echo " "
+}
+
+# save the original args and initialize arrays that will accumulate params
+ALL_ARGS=$(save "$@")
+set -- "-Dkc.home.dir=$(abs_path '..')" "-Djboss.server.config.dir=$(abs_path '../conf')" "-Djava.util.logging.manager=org.jboss.logmanager.LogManager" "-Dquarkus-log-max-startup-records=10000"
+SERVER_OPTS=$(save "$@")
+set -- $(abs_path '../lib/quarkus-run.jar')
+CLASSPATH_OPTS=$(save "$@")
+set --
+CONFIG_ARGS=$(save "$@")
 
 DEBUG_MODE="${DEBUG:-false}"
 DEBUG_PORT="${DEBUG_PORT:-8787}"
 DEBUG_SUSPEND="${DEBUG_SUSPEND:-n}"
 
-CONFIG_ARGS=${CONFIG_ARGS:-""}
-
+eval "set -- $ALL_ARGS"
 while [ "$#" -gt 0 ]
 do
     case "$1" in
@@ -61,11 +69,14 @@ do
           break
           ;;
       *)
-          case "$1" in
-            start-dev) CONFIG_ARGS="$CONFIG_ARGS --profile=dev $1";;
-            -D*) SERVER_OPTS="$SERVER_OPTS $1";;
-            *) CONFIG_ARGS="$CONFIG_ARGS $1";;
+          ALL_ARGS=$(save "$@")
+          ARG="$1"
+          case "$ARG" in
+            start-dev) eval "set -- $CONFIG_ARGS"; set -- "$@" "--profile=dev" "$ARG"; CONFIG_ARGS=$(save "$@");;
+            -D*) eval "set -- $SERVER_OPTS"; set -- "$@" "$ARG"; SERVER_OPTS=$(save "$@");;
+            *) eval "set -- $CONFIG_ARGS"; set -- "$@" "$ARG"; CONFIG_ARGS=$(save "$@");;
           esac
+          eval "set -- $ALL_ARGS"
           ;;
     esac
     shift
@@ -115,19 +126,22 @@ if [ "$DEBUG_MODE" = "true" ]; then
     fi
 fi
 
-JAVA_RUN_OPTS="$JAVA_OPTS $SERVER_OPTS -cp $CLASSPATH_OPTS io.quarkus.bootstrap.runner.QuarkusEntryPoint ${CONFIG_ARGS#?}"
+eval "set -- $CONFIG_ARGS"
+CONFIG_ARGS_STR=" "$(eval echo "$@")
+# create a final array of all options, this will also have the side effect of evaluating $JAVA_OPTS
+eval "set -- $JAVA_OPTS $SERVER_OPTS -cp $CLASSPATH_OPTS io.quarkus.bootstrap.runner.QuarkusEntryPoint $CONFIG_ARGS"
 
 if [ "$PRINT_ENV" = "true" ]; then
   echo "Using JAVA_OPTS: $JAVA_OPTS"
-  echo "Using JAVA_RUN_OPTS: $JAVA_RUN_OPTS"
+  echo "Using JAVA_RUN_OPTS: $@"
 fi
 
-case "$CONFIG_ARGS" in
+case "$CONFIG_ARGS_STR" in
   " build"* | *--optimized* | *-h | *--help*) ;;
   *)
-    eval "'$JAVA'" -Dkc.config.build-and-exit=true $JAVA_RUN_OPTS || exit $?
-    JAVA_RUN_OPTS="-Dkc.config.built=true $JAVA_RUN_OPTS"
+    "$JAVA" -Dkc.config.build-and-exit=true "$@" || exit $?
+    set -- "$@" "-Dkc.config.built=true"
     ;;
 esac
 
-eval exec "'$JAVA'" $JAVA_RUN_OPTS
+exec "$JAVA" "$@"
