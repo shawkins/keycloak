@@ -1,0 +1,139 @@
+# TMT test plan definition
+# https://tmt.readthedocs.io/en/latest/overview.html
+
+# Baseline common for all test plans
+#######################################################################
+summary: Keycloak test suite
+discover:
+  how: fmf
+
+# Required HW
+provision:
+  hardware:
+    memory: ">= 24 GiB"
+    cpu:
+      processors: ">= 8"
+
+# Install required packages and scripts for running keycloak suite
+prepare:
+  - name: Clean cache
+    how : shell
+    script: |
+        OS=$(cat /etc/redhat-release || true)
+        if [[ ${OS} == *"CentOS"* ]]; then
+            sudo yum -y clean dbcache
+        else
+            sudo dnf -y clean dbcache
+        fi
+
+  - name: Install packages
+    how: install
+    package:
+      - wget
+      - java-17-openjdk-devel
+      - xz
+      - make
+      - git
+      - zip
+      - coreutils
+
+  - name: Install docker-ce
+    how: shell
+    script: |
+      OS=$(cat /etc/redhat-release || true)
+      if [[ ${OS} == *"CentOS"* ]]; then
+        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      else
+        sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+      fi
+
+      sudo yum install -y docker-ce
+      sudo systemctl enable docker --now
+
+  - name: Install yq
+    how: shell
+    script: |
+      ARCH=$(uname -m)
+      if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
+      if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
+      ./keycloak-operator/systemtest/scripts/install_yq.sh ${ARCH}
+
+  - name: Install oc kubectl client
+    how: shell
+    script: |
+      PLATFORM=$(uname -m)
+      URL="http://mirror.openshift.com/pub/openshift-v4/${PLATFORM}/clients/ocp/stable/openshift-client-linux.tar.gz"
+      mkdir -p /tmp/openshift   
+      wget ${URL} -O openshift.tar.gz -q
+      tar xzf openshift.tar.gz -C /tmp/openshift
+      sudo cp /tmp/openshift/oc /usr/bin/oc
+      sudo cp /tmp/openshift/kubectl /usr/bin/kubectl
+      sudo rm -rf /tmp/openshift/
+      sudo rm -rf openshift.tar.gz
+
+  - name: Install mvn
+    how: shell
+    script: |
+      mkdir -p /usr/share/maven /usr/share/maven/ref
+      curl -fsSL -o /tmp/apache-maven.tar.gz https://apache.osuosl.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz
+      tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1
+      rm -f /tmp/apache-maven.tar.gz
+      ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+
+  - name: Install kind
+    how: shell
+    script: |
+      ARCH=$(uname -m)
+      if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
+      if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
+      ./keycloak-operator/systemtest/scripts/setup-kind.sh ${ARCH}
+
+  - name: Build Keycloak images
+    how: shell
+    script: |
+      # build images
+      ARCH=$(uname -m)
+      #
+      HOST=""
+      if [[ ${IP_FAMILY} == "ipv4" || ${IP_FAMILY} == "dual" ]]; then
+        HOST=$(hostname --ip-address | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | awk '$1 != "127.0.0.1" { print $1 }' | head -1)
+      elif [[ ${IP_FAMILY} == "ipv6" ]]; then
+        HOST="myregistry.local"
+      fi
+      export DOCKER_REGISTRY="${HOST}:5001"
+      export DOCKER_ORG="keycloak"
+      export DOCKER_TAG="test"
+      
+      ./mvnw -pl quarkus/deployment,quarkus/dist -am -DskipTests clean install
+      
+      cp ./quarkus/dist/target/keycloak-*.tar.gz ./quarkus/container
+      
+      (cd ./quarkus/container && docker build --build-arg KEYCLOAK_DIST=$(ls keycloak-*.tar.gz) . -t keycloak:$DOCKER_TAG)
+      (cd operator && ./keycloak-operator/scripts/build-testing-docker-images.sh $DOCKER_TAG keycloak custom-keycloak)
+            
+      mvn clean package -Dquarkus.container-image.build=true \ 
+        -Dquarkus.container-image.tag=$DOCKER_TAG \
+        -Dquarkus.container-image.group=$DOCKER_ORG \
+        -Dquarkus.container-image.registry=$DOCKER_REGISTRY \ 
+        -Dquarkus.container-image.push=true 
+
+# Discover tmt defined tests in tests/ folder
+execute:
+  how: tmt
+
+# Post install step to copy logs
+finish:
+  how: shell
+  script: ./keycloak-operator/systemtest/tmt/scripts/copy-logs.sh
+#######################################################################
+
+/smoke:
+  summary: Run smoke keycloak test suite
+  provision:
+    hardware:
+      memory: ">= 8 GiB"
+      cpu:
+        processors: ">= 4"
+  discover+:
+    test:
+      - smoke
