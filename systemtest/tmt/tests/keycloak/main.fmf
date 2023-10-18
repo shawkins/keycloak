@@ -4,7 +4,7 @@ duration: 2h
 environment:
   DOCKER_ORG: "keycloak"
   DOCKER_TAG: "test"
-  TEST_LOG_DIR: "keycloak-operator/systemtest/target/logs"
+  TEST_LOG_DIR: "systemtest/target/logs"
   TESTS: ""
   TEST_GROUPS: ""
   EXCLUDED_TEST_GROUPS: ""
