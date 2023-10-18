@@ -1,7 +1,7 @@
 #!/bin/sh -eux
 
 # Move to root folder of keycloak
-cd ../../../../../
+cd ../../../../
 
 #run tests
 if [[ ${IP_FAMILY} == "ipv4" || ${IP_FAMILY} == "dual" ]]; then

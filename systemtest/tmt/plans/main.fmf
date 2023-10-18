@@ -56,7 +56,7 @@ prepare:
       ARCH=$(uname -m)
       if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
       if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
-      ./keycloak-operator/systemtest/scripts/install_yq.sh ${ARCH}
+      ./systemtest/tmt/scripts/install_yq.sh ${ARCH}
 
   - name: Install oc kubectl client
     how: shell
@@ -86,7 +86,7 @@ prepare:
       ARCH=$(uname -m)
       if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
       if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
-      ./keycloak-operator/systemtest/scripts/setup-kind.sh ${ARCH}
+      ./systemtest/tmt/scripts/setup-kind.sh ${ARCH}
 
   - name: Build Keycloak images
     how: shell
@@ -124,7 +124,7 @@ execute:
 # Post install step to copy logs
 finish:
   how: shell
-  script: ./keycloak-operator/systemtest/tmt/scripts/copy-logs.sh
+  script: ./systemtest/tmt/scripts/copy-logs.sh
 #######################################################################
 
 /smoke:
