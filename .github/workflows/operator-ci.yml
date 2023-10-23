@@ -226,14 +226,9 @@ jobs:
           # Wait for the CRs to be ready
           ./scripts/check-examples-installed.sh keycloak
           
-  tests:
+  smoke:
     runs-on: ubuntu-latest
-    # Let's schedule tests only on user request. NOT automatically.
-    # Only repository owner or member can schedule tests
-    if: |
-      github.event.issue.pull_request
-      && contains(github.event.comment.body, '[test]')
-      && contains(fromJson('["OWNER", "MEMBER"]'), github.event.comment.author_association)
+    needs: [test-olm]
     steps:
       - name: Checkout repo and switch to corresponding pull request
         uses: actions/checkout@v4
@@ -245,8 +240,10 @@ jobs:
         with:
           api_key: ${{ secrets.TF_API_KEY }}
           git_url: https://github.com/shawkins/keycloak
+          git_ref: main
           tmt_plan_regex: "smoke"
           pull_request_status_name: "smoke"
+          variables: KEYCLOAK_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${VERSION};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${VERSION}
 
   check:
     name: Status Check - Keycloak Operator CI
