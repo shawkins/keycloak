@@ -225,6 +225,28 @@ jobs:
           kubectl apply -f src/test/resources/example-realm.yaml -n keycloak
           # Wait for the CRs to be ready
           ./scripts/check-examples-installed.sh keycloak
+          
+  tests:
+    runs-on: ubuntu-latest
+    # Let's schedule tests only on user request. NOT automatically.
+    # Only repository owner or member can schedule tests
+    if: |
+      github.event.issue.pull_request
+      && contains(github.event.comment.body, '[test]')
+      && contains(fromJson('["OWNER", "MEMBER"]'), github.event.comment.author_association)
+    steps:
+      - name: Checkout repo and switch to corresponding pull request
+        uses: actions/checkout@v4
+        with:
+          git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+
+      - name: Schedule test on Testing Farm
+        uses: sclorg/testing-farm-as-github-action@v1
+        with:
+          api_key: ${{ secrets.TF_API_KEY }}
+          git_url: https://github.com/shawkins/keycloak
+          tmt_plan_regex: "smoke"
+          pull_request_status_name: "smoke"
 
   check:
     name: Status Check - Keycloak Operator CI
