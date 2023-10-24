@@ -243,7 +243,7 @@ jobs:
           git_ref: main
           tmt_plan_regex: "smoke"
           pull_request_status_name: "smoke"
-          variables: KEYCLOAK_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${VERSION};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${VERSION}
+          variables: KEYCLOAK_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:86400000.0.0;KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:86400000.0.0
 
   check:
     name: Status Check - Keycloak Operator CI
