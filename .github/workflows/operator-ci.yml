@@ -131,8 +131,8 @@ jobs:
           eval $(minikube -p minikube docker-env)
           (cd quarkus/container && docker build --build-arg KEYCLOAK_DIST=$(ls keycloak-*.tar.gz) . -t keycloak:${{ env.version_remote }})
           (cd operator && ./scripts/build-testing-docker-images.sh ${{ env.version_remote }} keycloak custom-keycloak)
-          docker tag custom-keycloak:${{ env.version_remote }} ttl.sh/${UUID}custom-keycloak:${TTL_VERSION}
-          docker push ttl.sh/${UUID}custom-keycloak:${TTL_VERSION}
+          docker tag custom-keycloak:${{ env.version_remote }} ttl.sh/${GITHUB_SHA::6}custom-keycloak:${{ env.TTL_VERSION }}
+          docker push ttl.sh/${GITHUB_SHA::6}custom-keycloak:${{ env.TTL_VERSION }}
 
       - name: Test operator running in cluster
         run: |
@@ -245,7 +245,7 @@ jobs:
           git_ref: main
           tmt_plan_regex: "smoke"
           pull_request_status_name: "smoke"
-          variables: KEYCLOAK_IMAGE=ttl.sh/${UUID}keycloak:${{ env.TTL_VERSION }};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${UUID}keycloak-operator:${{ env.TTL_VERSION }};CUSTOM_IMAGE=ttl.sh/${UUID}custom-keycloak:${{ env.TTL_VERSION }}
+          variables: KEYCLOAK_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${{ env.TTL_VERSION }};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak-operator:${{ env.TTL_VERSION }};CUSTOM_IMAGE=ttl.sh/${GITHUB_SHA::6}custom-keycloak:${{ env.TTL_VERSION }}
 
   check:
     name: Status Check - Keycloak Operator CI
