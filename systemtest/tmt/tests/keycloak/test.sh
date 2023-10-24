@@ -11,4 +11,4 @@ cd ../../../../
     -Dtest.operator.custom.image=${CUSTOM_IMAGE} \
     --no-transfer-progress -Dtest.operator.deployment=remote
  
- # TODO: olm tests
+ # TODO: olm tests - will need to move the logic in the gha into a script
