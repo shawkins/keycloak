@@ -11,6 +11,7 @@ on:
 env:
   MINIKUBE_VERSION: v1.31.2
   KUBERNETES_VERSION: v1.24.17 # OCP 4.11
+  TTL_VERSION: 86400000.0.0
 
 defaults:
   run:
@@ -130,6 +131,8 @@ jobs:
           eval $(minikube -p minikube docker-env)
           (cd quarkus/container && docker build --build-arg KEYCLOAK_DIST=$(ls keycloak-*.tar.gz) . -t keycloak:${{ env.version_remote }})
           (cd operator && ./scripts/build-testing-docker-images.sh ${{ env.version_remote }} keycloak custom-keycloak)
+          docker tag custom-keycloak:${{ env.version_remote }} ttl.sh/${UUID}custom-keycloak:${TTL_VERSION}
+          docker push ttl.sh/${UUID}custom-keycloak:${TTL_VERSION}
 
       - name: Test operator running in cluster
         run: |
@@ -211,7 +214,7 @@ jobs:
       - name: Arrange OLM test installation for all namespaces
         working-directory: operator
         run: |
-          kubectl patch csv keycloak-operator.v86400000.0.0 --type merge --patch '{"spec": {"installModes": [{"type": "AllNamespaces","supported": true}]}}'
+          kubectl patch csv keycloak-operator.v${{ env.TTL_VERSION }} --type merge --patch '{"spec": {"installModes": [{"type": "AllNamespaces","supported": true}]}}'
           kubectl patch operatorgroup og --type json --patch '[{"op":"remove","path":"/spec/targetNamespaces"}]'
        
       - name: Deploy an example Keycloak in a different namespace and wait for it to be ready
@@ -225,6 +228,25 @@ jobs:
           kubectl apply -f src/test/resources/example-realm.yaml -n keycloak
           # Wait for the CRs to be ready
           ./scripts/check-examples-installed.sh keycloak
+          
+  smoke:
+    runs-on: ubuntu-latest
+    needs: [test-remote, test-olm]
+    steps:
+      - name: Checkout repo and switch to corresponding pull request
+        uses: actions/checkout@v4
+        with:
+          git_ref: "refs/pull/${{ github.event.issue.number }}/head"
+
+      - name: Schedule test on Testing Farm
+        uses: sclorg/testing-farm-as-github-action@v1
+        with:
+          api_key: ${{ secrets.TF_API_KEY }}
+          git_url: https://github.com/shawkins/keycloak
+          git_ref: main
+          tmt_plan_regex: "smoke"
+          pull_request_status_name: "smoke"
+          variables: KEYCLOAK_IMAGE=ttl.sh/${UUID}keycloak:${{ env.TTL_VERSION }};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${UUID}keycloak-operator:${{ env.TTL_VERSION }};CUSTOM_IMAGE=ttl.sh/${UUID}custom-keycloak:${{ env.TTL_VERSION }}
 
   check:
     name: Status Check - Keycloak Operator CI
