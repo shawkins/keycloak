@@ -246,6 +246,7 @@ jobs:
           tmt_plan_regex: "smoke"
           pull_request_status_name: "smoke"
           variables: KEYCLOAK_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${{ env.TTL_VERSION }};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak-operator:${{ env.TTL_VERSION }};CUSTOM_IMAGE=ttl.sh/${GITHUB_SHA::6}custom-keycloak:${{ env.TTL_VERSION }}
+          secrets: CRC_PULL_SECRET=${{ secrets.CRC_PULL_SECRET }}
 
   check:
     name: Status Check - Keycloak Operator CI
