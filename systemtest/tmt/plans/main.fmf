@@ -10,7 +10,7 @@ discover:
 # Required HW
 provision:
   hardware:
-    memory: ">= 24 GiB"
+    memory: ">= 16 GiB"
     cpu:
       processors: ">= 8"
 
@@ -64,7 +64,7 @@ prepare:
       PLATFORM=$(uname -m)
       URL="http://mirror.openshift.com/pub/openshift-v4/${PLATFORM}/clients/ocp/stable/openshift-client-linux.tar.gz"
       mkdir -p /tmp/openshift   
-      wget ${URL} -O openshift.tar.gz -q
+      curl -fsSL -o openshift.tar.gz ${URL}
       tar xzf openshift.tar.gz -C /tmp/openshift
       sudo cp /tmp/openshift/oc /usr/bin/oc
       sudo cp /tmp/openshift/kubectl /usr/bin/kubectl
@@ -83,7 +83,7 @@ prepare:
   - name: Install CRC
     how: shell
     script: |
-      sudo dnf install xz
+      sudo dnf -y install xz NetworkManager systemd-container coreutils
       curl -fsSL -o /tmp/crc-linux-amd64.tar.xz https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
       xz -d /tmp/crc-linux-amd64.tar.xz
       mkdir -p /tmp/crc
@@ -91,10 +91,13 @@ prepare:
       rm /tmp/crc-linux-amd64.tar            
       sudo cp /tmp/crc/*/crc /usr/bin/crc
       rm -rf /tmp/crc
-      sudo dnf install NetworkManager
+      echo ${CRC_PULL_SECRET} | sed -r 's/!/=/' | base32 -d > /tmp/pull-secret.json 
+      su - cloud-user
+      crc config set skip-check-daemon-systemd-unit true 
+      crc config set skip-check-daemon-systemd-sockets true
+      # scrape the password
       crc setup
-      echo ${CRC_PULL_SECRET} > /tmp/pull-secret.json 
-      crc start --cpus 7 --memory 18432 -p /tmp/pull-secret.json
+      oc login -u kubeadmin -p developer https://api.crc.testing:6443
       
 # Discover tmt defined tests in tests/ folder
 execute:
@@ -110,9 +113,9 @@ finish:
   summary: Run smoke keycloak test suite
   provision:
     hardware:
-      memory: ">= 8 GiB"
+      memory: ">= 16 GiB"
       cpu:
-        processors: ">= 4"
+        processors: ">= 8"
   discover+:
     test:
       - smoke
