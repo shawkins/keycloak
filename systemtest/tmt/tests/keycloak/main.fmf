@@ -15,7 +15,7 @@ environment:
 /smoke:
   summary: Run smoke keycloak test suite
   tags: [smoke]
-  duration: 40m
+  duration: 60m
   tier: 1
   environment+:
     TEST_PROFILE: smoke

@@ -79,14 +79,22 @@ prepare:
       tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1
       rm -f /tmp/apache-maven.tar.gz
       ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
-
-  - name: Install kind
+      
+  - name: Install CRC
     how: shell
     script: |
-      ARCH=$(uname -m)
-      if [[ $ARCH == "x86_64" ]]; then ARCH="amd64"; fi
-      if [[ $ARCH == "aarch64" ]]; then ARCH="arm64"; fi
-      ./systemtest/tmt/scripts/setup-kind.sh ${ARCH}
+      sudo dnf install xz
+      curl -fsSL -o /tmp/crc-linux-amd64.tar.xz https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
+      xz -d /tmp/crc-linux-amd64.tar.xz
+      mkdir -p /tmp/crc
+      tar xf /tmp/crc-linux-amd64.tar -C /tmp/crc
+      rm /tmp/crc-linux-amd64.tar            
+      sudo cp /tmp/crc/*/crc /usr/bin/crc
+      rm -rf /tmp/crc
+      sudo dnf install NetworkManager
+      crc setup
+      echo ${CRC_PULL_SECRET} > /tmp/pull-secret.json 
+      crc start --cpus 7 --memory 18432 -p /tmp/pull-secret.json
       
 # Discover tmt defined tests in tests/ folder
 execute:
