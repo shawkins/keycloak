@@ -18,6 +18,17 @@ public class SecurityOptions {
             .defaultValue(FipsMode.DISABLED)
             .build();
 
+    public static final Option<String> TRUSTSTORE = new OptionBuilder<>("truststore", String.class)
+            .category(OptionCategory.SECURITY)
+            .description("List of pkcs12 (.p12 or .pfx) or PEM files that will be used to construct the javax.net.ssl.trustStore used at runtime.")
+            .build();
+
+    public static final Option<Boolean> TRUSTSTORE_INCLUDE_DEFAULT = new OptionBuilder<>("truststore-include-default", Boolean.class)
+            .category(OptionCategory.SECURITY)
+            .defaultValue(Boolean.TRUE)
+            .description("Whether to include the Java default truststore certs when using the --truststore option")
+            .build();
+
     private static List<String> getFipsModeValues() {
         return Arrays.asList(FipsMode.NON_STRICT.toString(), FipsMode.STRICT.toString());
     }

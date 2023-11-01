@@ -21,6 +21,12 @@ final class SecurityPropertyMappers {
         return new PropertyMapper[] {
                 fromOption(SecurityOptions.FIPS_MODE).transformer(SecurityPropertyMappers::resolveFipsMode)
                         .paramLabel("mode")
+                        .build(),
+                fromOption(SecurityOptions.TRUSTSTORE)
+                        .paramLabel(SecurityOptions.TRUSTSTORE.getKey())
+                        .build(),
+                fromOption(SecurityOptions.TRUSTSTORE_INCLUDE_DEFAULT)
+                        .paramLabel(SecurityOptions.TRUSTSTORE_INCLUDE_DEFAULT.getKey())
                         .build()
         };
     }
