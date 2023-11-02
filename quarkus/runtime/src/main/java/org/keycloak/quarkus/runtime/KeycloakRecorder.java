@@ -68,6 +68,10 @@ public class KeycloakRecorder {
         Profile.init(profileName, features);
     }
 
+    public void configureTruststore() {
+        TruststoreBuilder.setSystemTruststore();
+    }
+
     public void configureLiquibase(Map<String, List<String>> services) {
         ServiceLocator locator = Scope.getCurrentScope().getServiceLocator();
         if (locator instanceof FastServiceLocator)
