@@ -29,7 +29,6 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -286,7 +285,7 @@ class KeycloakProcessor {
      *
      * <p>The {@code hibernate-orm} extension expects that the dialect is statically
      * set to the persistence unit if there is any from the classpath and we use this method to obtain the dialect from the configuration
-     * file so that we can build the application with whatever dialect we want. In addition to the dialect, we should also be 
+     * file so that we can build the application with whatever dialect we want. In addition to the dialect, we should also be
      * allowed to set any additional defaults that we think that makes sense.
      *
      * @param config
@@ -459,9 +458,9 @@ class KeycloakProcessor {
                 .map(ParsedPersistenceXmlDescriptor::getName)
                 .filter(Predicate.not("keycloak-default"::equals)).forEach((String unitName) -> {
                     NamedJpaConnectionProviderFactory factory = new NamedJpaConnectionProviderFactory();
-                    
+
                     factory.setUnitName(unitName);
-                    
+
                     factories.get(spi).get(JpaConnectionProvider.class).put(unitName, NamedJpaConnectionProviderFactory.class);
                     preConfiguredProviders.put(unitName, factory);
                 });
@@ -662,7 +661,6 @@ class KeycloakProcessor {
         }));
     }
 
-    @Consume(BootstrapConfigSetupCompleteBuildItem.class)
     @Consume(ProfileBuildItem.class)
     @Produce(CryptoProviderInitBuildItem.class)
     @BuildStep
