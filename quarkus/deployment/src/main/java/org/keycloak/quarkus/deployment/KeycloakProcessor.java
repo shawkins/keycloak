@@ -43,6 +43,7 @@ import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.resteasy.reactive.spi.IgnoreStackMixingBuildItem;
 import io.smallrye.config.ConfigValue;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
@@ -204,6 +205,11 @@ class KeycloakProcessor {
 
     private static ProviderFactory registerSAMLScriptMapper(ScriptProviderMetadata metadata) {
         return new DeployedScriptSAMLProtocolMapper(metadata);
+    }
+
+    @BuildStep
+    IgnoreStackMixingBuildItem getIgnoreStackMixing() {
+        return new IgnoreStackMixingBuildItem();
     }
 
     @BuildStep

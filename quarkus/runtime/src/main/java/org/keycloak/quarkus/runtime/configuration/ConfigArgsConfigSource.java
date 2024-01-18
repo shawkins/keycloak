@@ -38,11 +38,11 @@ import org.keycloak.utils.StringUtil;
 /**
  * <p>A configuration source for mapping configuration arguments to their corresponding properties so that they can be recognized
  * when building and running the server.
- * 
+ *
  * <p>The mapping is based on the system property {@code kc.config.args}, where the value is a comma-separated list of
  * the arguments passed during build or runtime. E.g: "--http-enabled=true,--http-port=8180,--database-vendor=postgres".
- * 
- * <p>Each argument is going to be mapped to its corresponding configuration property by prefixing the key with the {@link MicroProfileConfigProvider#NS_KEYCLOAK} namespace. 
+ *
+ * <p>Each argument is going to be mapped to its corresponding configuration property by prefixing the key with the {@link MicroProfileConfigProvider#NS_KEYCLOAK} namespace.
  */
 public class ConfigArgsConfigSource extends PropertiesConfigSource {
 
@@ -56,7 +56,7 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
         super(parseArgument(), NAME, 600);
     }
 
-    public static void setCliArgs(String[] args) {
+    public static void setCliArgs(String... args) {
         System.setProperty(CLI_ARGS, String.join(ARG_SEPARATOR, args));
     }
 
@@ -100,7 +100,7 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
 
     private static Map<String, String> parseArgument() {
         String rawArgs = getRawConfigArgs();
-        
+
         if (rawArgs == null || "".equals(rawArgs.trim())) {
             return Collections.emptyMap();
         }
