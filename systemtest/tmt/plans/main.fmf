@@ -10,6 +10,8 @@ discover:
 # Required HW
 provision:
   hardware:
+    virtualization:
+      is-supported: true
     memory: ">= 16 GiB"
     cpu:
       processors: ">= 8"
@@ -36,19 +38,6 @@ prepare:
       - git
       - zip
       - coreutils
-
-  - name: Install docker-ce
-    how: shell
-    script: |
-      OS=$(cat /etc/redhat-release || true)
-      if [[ ${OS} == *"CentOS"* ]]; then
-        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-      else
-        sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-      fi
-
-      sudo yum install -y docker-ce
-      sudo systemctl enable docker --now
 
   - name: Install yq
     how: shell
@@ -88,16 +77,18 @@ prepare:
       xz -d /tmp/crc-linux-amd64.tar.xz
       mkdir -p /tmp/crc
       tar xf /tmp/crc-linux-amd64.tar -C /tmp/crc
-      rm /tmp/crc-linux-amd64.tar            
+      rm /tmp/crc-linux-amd64.tar     
       sudo cp /tmp/crc/*/crc /usr/bin/crc
       rm -rf /tmp/crc
       echo ${CRC_PULL_SECRET} | sed -r 's/!/=/' | base32 -d > /tmp/pull-secret.json 
       su - cloud-user
+      crc config set consent-telemetry no
+      crc config set cpus 7
+      crc config set memory 15
       crc config set skip-check-daemon-systemd-unit true 
       crc config set skip-check-daemon-systemd-sockets true
-      # scrape the password
       crc setup
-      oc login -u kubeadmin -p developer https://api.crc.testing:6443
+      oc login -u kubeadmin https://api.crc.testing:6443
       
 # Discover tmt defined tests in tests/ folder
 execute:
@@ -113,6 +104,8 @@ finish:
   summary: Run smoke keycloak test suite
   provision:
     hardware:
+      virtualization:
+        is-supported: true
       memory: ">= 16 GiB"
       cpu:
         processors: ">= 8"
