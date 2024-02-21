@@ -232,11 +232,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-remote, test-olm]
     steps:
-      - name: Checkout repo and switch to corresponding pull request
-        uses: actions/checkout@v4
-        with:
-          git_ref: "refs/pull/${{ github.event.issue.number }}/head"
-
+      - uses: actions/checkout@v4
       - name: Schedule test on Testing Farm
         uses: sclorg/testing-farm-as-github-action@v1
         with:
@@ -247,6 +243,7 @@ jobs:
           pull_request_status_name: "smoke"
           variables: KEYCLOAK_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak:${{ env.TTL_VERSION }};KEYCLOAK_OPERATOR_IMAGE=ttl.sh/${GITHUB_SHA::6}keycloak-operator:${{ env.TTL_VERSION }};CUSTOM_IMAGE=ttl.sh/${GITHUB_SHA::6}custom-keycloak:${{ env.TTL_VERSION }}
           secrets: CRC_PULL_SECRET=${{ secrets.CRC_PULL_SECRET }}
+          compose: RHEL-9.4.0-Nightly
 
   check:
     name: Status Check - Keycloak Operator CI
