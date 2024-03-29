@@ -54,7 +54,6 @@ import picocli.CommandLine.Parameters;
 
 import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.DELETE;
 import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.SET;
-import static org.keycloak.client.admin.cli.util.AuthUtil.ensureToken;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.credentialsAvailable;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
 import static org.keycloak.client.admin.cli.util.HttpUtil.checkSuccess;

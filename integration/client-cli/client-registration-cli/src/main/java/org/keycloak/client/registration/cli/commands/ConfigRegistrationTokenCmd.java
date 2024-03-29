@@ -1,7 +1,7 @@
 package org.keycloak.client.registration.cli.commands;
 
-import org.keycloak.client.registration.cli.config.RealmConfigData;
-import org.keycloak.client.registration.cli.util.IoUtil;
+import org.keycloak.client.admin.cli.config.RealmConfigData;
+import org.keycloak.client.admin.cli.util.IoUtil;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -10,11 +10,11 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.saveMergeConfig;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.OS_ARCH;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.OS_ARCH;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>

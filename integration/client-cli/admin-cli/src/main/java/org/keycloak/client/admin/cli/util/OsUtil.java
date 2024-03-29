@@ -22,8 +22,6 @@ package org.keycloak.client.admin.cli.util;
 public class OsUtil {
 
     public static final OsArch OS_ARCH = determineOSAndArch();
-    // TODO: move CMD out of this class
-    public static final String CMD = OS_ARCH.isWindows() ? "kcadm.bat" : "kcadm.sh";
 
     public static final String PROMPT = OS_ARCH.isWindows() ? "c:\\>" : "$";
 

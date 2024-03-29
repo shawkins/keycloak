@@ -18,8 +18,10 @@
 package org.keycloak.client.registration.cli.util;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import org.keycloak.client.registration.cli.common.AttributeKey;
-import org.keycloak.client.registration.cli.common.AttributeOperation;
+
+import org.keycloak.client.admin.cli.util.AttributeException;
+import org.keycloak.client.admin.cli.common.AttributeKey;
+import org.keycloak.client.admin.cli.common.AttributeOperation;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;

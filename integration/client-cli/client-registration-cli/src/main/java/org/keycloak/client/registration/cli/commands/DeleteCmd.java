@@ -17,7 +17,7 @@
 
 package org.keycloak.client.registration.cli.commands;
 
-import org.keycloak.client.registration.cli.config.ConfigData;
+import org.keycloak.client.admin.cli.config.ConfigData;
 import org.keycloak.client.registration.cli.util.ParseUtil;
 
 import java.io.PrintWriter;
@@ -26,17 +26,16 @@ import java.io.StringWriter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-import static org.keycloak.client.registration.cli.util.AuthUtil.ensureToken;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.credentialsAvailable;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.getRegistrationToken;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.loadConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.saveMergeConfig;
-import static org.keycloak.client.registration.cli.util.HttpUtil.doDelete;
-import static org.keycloak.client.registration.cli.util.HttpUtil.urlencode;
-import static org.keycloak.client.registration.cli.util.IoUtil.warnfErr;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.credentialsAvailable;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.getRegistrationToken;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
+import static org.keycloak.client.admin.cli.util.HttpUtil.doDelete;
+import static org.keycloak.client.admin.cli.util.HttpUtil.urlencode;
+import static org.keycloak.client.admin.cli.util.IoUtil.warnfErr;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
 
 /**

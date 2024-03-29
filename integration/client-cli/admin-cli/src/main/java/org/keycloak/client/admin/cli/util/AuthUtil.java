@@ -33,7 +33,7 @@ import java.security.KeyPair;
 import java.util.UUID;
 
 import static java.lang.System.currentTimeMillis;
-import static org.keycloak.client.admin.cli.util.ConfigUtil.checkAuthInfo;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.checkServerInfo;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
 import static org.keycloak.client.admin.cli.util.HttpUtil.APPLICATION_FORM_URL_ENCODED;
 import static org.keycloak.client.admin.cli.util.HttpUtil.APPLICATION_JSON;
@@ -45,12 +45,12 @@ import static org.keycloak.client.admin.cli.util.HttpUtil.urlencode;
  */
 public class AuthUtil {
 
-    public static String ensureToken(ConfigData config) {
+    public static String ensureToken(ConfigData config, String cmd) {
         if (config.getExternalToken() != null) {
             return config.getExternalToken();
         }
 
-        checkAuthInfo(config);
+        checkServerInfo(config, cmd);
 
         RealmConfigData realmConfig = config.sessionRealmConfigData();
 
@@ -63,11 +63,11 @@ public class AuthUtil {
             // check refresh_token against expiry time
             // if it's less than 5s to expiry, fail with credentials expired
             if (realmConfig.getRefreshExpiresAt() != null && realmConfig.getRefreshExpiresAt() - now < 5000) {
-                throw new RuntimeException("Session has expired. Login again with '" + OsUtil.CMD + " config credentials'");
+                throw new RuntimeException("Session has expired. Login again with '" + cmd + " config credentials'");
             }
 
             if (realmConfig.getSigExpiresAt() != null && realmConfig.getSigExpiresAt() - now < 5000) {
-                throw new RuntimeException("Session has expired. Login again with '" + OsUtil.CMD + " config credentials'");
+                throw new RuntimeException("Session has expired. Login again with '" + cmd + " config credentials'");
             }
 
             try {

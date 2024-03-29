@@ -17,11 +17,13 @@
 package org.keycloak.client.admin.cli.commands;
 
 import org.keycloak.OAuth2Constants;
+import org.keycloak.client.admin.cli.KcAdmMain;
 import org.keycloak.client.admin.cli.config.ConfigData;
 import org.keycloak.client.admin.cli.config.ConfigHandler;
 import org.keycloak.client.admin.cli.config.FileConfigHandler;
 import org.keycloak.client.admin.cli.config.InMemoryConfigHandler;
 import org.keycloak.client.admin.cli.config.RealmConfigData;
+import org.keycloak.client.admin.cli.util.AuthUtil;
 import org.keycloak.client.admin.cli.util.ConfigUtil;
 import org.keycloak.client.admin.cli.util.HttpUtil;
 import org.keycloak.client.admin.cli.util.IoUtil;
@@ -32,7 +34,6 @@ import picocli.CommandLine.Option;
 
 import static org.keycloak.client.admin.cli.config.FileConfigHandler.setConfigFile;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CLIENT;
-import static org.keycloak.client.admin.cli.util.ConfigUtil.checkAuthInfo;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.checkServerInfo;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
 
@@ -140,7 +141,7 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
         }
 
         if (!noconfig) {
-            setConfigFile(config != null ? config : ConfigUtil.DEFAULT_CONFIG_FILE_PATH);
+            setConfigFile(config != null ? config : KcAdmMain.DEFAULT_CONFIG_FILE_PATH);
             ConfigUtil.setHandler(new FileConfigHandler());
         } else {
             InMemoryConfigHandler handler = new InMemoryConfigHandler();
@@ -213,7 +214,7 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             }
 
         } else {
-            checkAuthInfo(config);
+            checkServerInfo(config, KcAdmMain.CMD);
 
             // make sure all defaults are initialized after this point
             applyDefaultOptionValues();
@@ -240,7 +241,7 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             result.setExternalToken(externalToken);
         }
 
-        checkServerInfo(result);
+        checkServerInfo(result, KcAdmMain.CMD);
         return result;
     }
 
@@ -262,6 +263,10 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             rdata.setSecret(secret);
         String grantTypeForAuthentication = user == null ? OAuth2Constants.CLIENT_CREDENTIALS : OAuth2Constants.PASSWORD;
         rdata.setGrantTypeForAuthentication(grantTypeForAuthentication);
+    }
+
+    protected String ensureToken(ConfigData config) {
+        return AuthUtil.ensureToken(config, KcAdmMain.CMD);
     }
 
 }

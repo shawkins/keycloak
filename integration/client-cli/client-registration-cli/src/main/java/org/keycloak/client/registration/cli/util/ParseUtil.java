@@ -19,7 +19,9 @@ package org.keycloak.client.registration.cli.util;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import org.keycloak.client.registration.cli.common.AttributeOperation;
+
+import org.keycloak.client.admin.cli.util.AttributeException;
+import org.keycloak.client.admin.cli.common.AttributeOperation;
 import org.keycloak.client.registration.cli.common.CmdStdinContext;
 import org.keycloak.client.registration.cli.common.EndpointType;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -29,8 +31,7 @@ import org.keycloak.util.JsonSerialization;
 import java.io.IOException;
 import java.util.List;
 
-import static java.lang.System.arraycopy;
-import static org.keycloak.client.registration.cli.util.IoUtil.readFileOrStdin;
+import static org.keycloak.client.admin.cli.util.IoUtil.readFileOrStdin;
 import static org.keycloak.client.registration.cli.util.ReflectionUtil.setAttributes;
 
 /**
@@ -40,28 +41,6 @@ public class ParseUtil {
 
     public static final String CLIENT_OPTION_WARN = "You're using what looks like an OPTION as CLIENT: %s";
     public static final String TOKEN_OPTION_WARN = "You're using what looks like an OPTION as TOKEN: %s";
-
-    public static String[] shift(String[] args) {
-        if (args.length == 1)
-            return new String[0];
-        String [] nu = new String [args.length-1];
-        arraycopy(args, 1, nu, 0, args.length-1);
-        return nu;
-    }
-
-    public static String[] parseKeyVal(String keyval) {
-        // we expect = as a separator
-        int pos = keyval.indexOf("=");
-        if (pos <= 0) {
-            throw new RuntimeException("Invalid key=value parameter: [" + keyval + "]");
-        }
-
-        String [] parsed = new String[2];
-        parsed[0] = keyval.substring(0, pos);
-        parsed[1] = keyval.substring(pos+1);
-
-        return parsed;
-    }
 
     public static CmdStdinContext parseFileOrStdin(String file, EndpointType type) {
 

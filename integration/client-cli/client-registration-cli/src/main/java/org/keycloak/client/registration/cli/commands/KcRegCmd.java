@@ -21,10 +21,9 @@ import java.io.StringWriter;
 
 import picocli.CommandLine.Command;
 
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.IoUtil.printOut;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
@@ -50,7 +49,7 @@ subcommands = {
         UpdateTokenCmd.class
 })
 public class KcRegCmd extends AbstractGlobalOptionsCmd {
-    
+
     @Override
     protected boolean nothingToDo() {
         return true;

@@ -1,23 +1,24 @@
 package org.keycloak.client.registration.cli.commands;
 
 import org.keycloak.OAuth2Constants;
-import org.keycloak.client.registration.cli.config.ConfigData;
-import org.keycloak.client.registration.cli.config.ConfigHandler;
-import org.keycloak.client.registration.cli.config.FileConfigHandler;
-import org.keycloak.client.registration.cli.config.InMemoryConfigHandler;
-import org.keycloak.client.registration.cli.config.RealmConfigData;
-import org.keycloak.client.registration.cli.util.ConfigUtil;
-import org.keycloak.client.registration.cli.util.HttpUtil;
-import org.keycloak.client.registration.cli.util.IoUtil;
+import org.keycloak.client.admin.cli.config.ConfigData;
+import org.keycloak.client.admin.cli.config.ConfigHandler;
+import org.keycloak.client.admin.cli.config.FileConfigHandler;
+import org.keycloak.client.admin.cli.config.InMemoryConfigHandler;
+import org.keycloak.client.admin.cli.config.RealmConfigData;
+import org.keycloak.client.admin.cli.util.AuthUtil;
+import org.keycloak.client.admin.cli.util.ConfigUtil;
+import org.keycloak.client.admin.cli.util.HttpUtil;
+import org.keycloak.client.admin.cli.util.IoUtil;
+import org.keycloak.client.registration.cli.KcRegMain;
 
 import java.io.File;
 
 import picocli.CommandLine.Option;
 
-import static org.keycloak.client.registration.cli.config.FileConfigHandler.setConfigFile;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.checkAuthInfo;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.checkServerInfo;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.loadConfig;
+import static org.keycloak.client.admin.cli.config.FileConfigHandler.setConfigFile;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.checkServerInfo;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
@@ -115,7 +116,7 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
         }
 
         if (!noconfig) {
-            setConfigFile(config != null ? config : ConfigUtil.DEFAULT_CONFIG_FILE_PATH);
+            setConfigFile(config != null ? config : KcRegMain.DEFAULT_CONFIG_FILE_PATH);
             ConfigUtil.setHandler(new FileConfigHandler());
         } else {
             InMemoryConfigHandler handler = new InMemoryConfigHandler();
@@ -188,7 +189,7 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             }
 
         } else {
-            checkAuthInfo(config);
+            checkServerInfo(config, KcRegMain.CMD);
 
             // make sure all defaults are initialized after this point
             applyDefaultOptionValues();
@@ -212,7 +213,7 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
             result.setRealm(realm);
         }
 
-        checkServerInfo(result);
+        checkServerInfo(result, KcRegMain.CMD);
         return result;
     }
 
@@ -251,5 +252,9 @@ public abstract class AbstractAuthOptionsCmd extends AbstractGlobalOptionsCmd {
 
     protected static String booleanOptionForCheck(boolean value) {
         return value ? "true" : null;
+    }
+
+    protected String ensureToken(ConfigData config) {
+        return AuthUtil.ensureToken(config, KcRegMain.CMD);
     }
 }

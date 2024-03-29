@@ -1,9 +1,9 @@
 package org.keycloak.client.registration.cli.commands;
 
 import org.keycloak.OAuth2Constants;
-import org.keycloak.client.registration.cli.config.ConfigData;
-import org.keycloak.client.registration.cli.config.RealmConfigData;
-import org.keycloak.client.registration.cli.util.AuthUtil;
+import org.keycloak.client.admin.cli.config.ConfigData;
+import org.keycloak.client.admin.cli.config.RealmConfigData;
+import org.keycloak.client.admin.cli.util.AuthUtil;
 import org.keycloak.representations.AccessTokenResponse;
 
 import java.io.File;
@@ -13,18 +13,18 @@ import java.net.URL;
 
 import picocli.CommandLine.Command;
 
-import static org.keycloak.client.registration.cli.util.AuthUtil.getAuthTokens;
-import static org.keycloak.client.registration.cli.util.AuthUtil.getAuthTokensByJWT;
-import static org.keycloak.client.registration.cli.util.AuthUtil.getAuthTokensBySecret;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.getHandler;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.loadConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.saveTokens;
-import static org.keycloak.client.registration.cli.util.IoUtil.printErr;
-import static org.keycloak.client.registration.cli.util.IoUtil.readSecret;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.OS_ARCH;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.AuthUtil.getAuthTokens;
+import static org.keycloak.client.admin.cli.util.AuthUtil.getAuthTokensByJWT;
+import static org.keycloak.client.admin.cli.util.AuthUtil.getAuthTokensBySecret;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.getHandler;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.saveTokens;
+import static org.keycloak.client.admin.cli.util.IoUtil.printErr;
+import static org.keycloak.client.admin.cli.util.IoUtil.readSecret;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.OS_ARCH;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>

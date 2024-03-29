@@ -1,6 +1,6 @@
 package org.keycloak.client.registration.cli.commands;
 
-import org.keycloak.client.registration.cli.common.AttributeKey;
+import org.keycloak.client.admin.cli.common.AttributeKey;
 import org.keycloak.client.registration.cli.common.EndpointType;
 import org.keycloak.client.registration.cli.util.ReflectionUtil;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -20,8 +20,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.util.ReflectionUtil.getAttributeListWithJSonTypes;
 import static org.keycloak.client.registration.cli.util.ReflectionUtil.isBasicType;
 import static org.keycloak.client.registration.cli.util.ReflectionUtil.isListType;

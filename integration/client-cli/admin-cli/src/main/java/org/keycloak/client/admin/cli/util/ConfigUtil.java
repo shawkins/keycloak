@@ -33,8 +33,6 @@ public class ConfigUtil {
 
     public static final String DEFAULT_CONFIG_FILE_STRING = OsUtil.OS_ARCH.isWindows() ? "%HOMEDRIVE%%HOMEPATH%\\.keycloak\\kcadm.config" : "~/.keycloak/kcadm.config";
 
-    public static final String DEFAULT_CONFIG_FILE_PATH = System.getProperty("user.home") + "/.keycloak/kcadm.config";
-
     private static ConfigHandler handler;
 
     public static ConfigHandler getHandler() {
@@ -43,6 +41,15 @@ public class ConfigUtil {
 
     public static void setHandler(ConfigHandler handler) {
         ConfigUtil.handler = handler;
+    }
+
+    public static String getRegistrationToken(RealmConfigData data, String clientId) {
+        String token = data.getClients().get(clientId);
+        return token == null || token.length() == 0 ? null : token;
+    }
+
+    public static void setRegistrationToken(RealmConfigData data, String clientId, String token) {
+        data.getClients().put(clientId, token == null ? "" : token);
     }
 
     public static void saveTokens(AccessTokenResponse tokens, String endpoint, String realm, String clientId, String signKey, Long sigExpiresAt, String secret,
@@ -67,17 +74,13 @@ public class ConfigUtil {
         });
     }
 
-    public static void checkServerInfo(ConfigData config) {
+    public static void checkServerInfo(ConfigData config, String cmd) {
         if (config.getServerUrl() == null) {
-            throw new RuntimeException("No server specified. Use --server, or '" + OsUtil.CMD + " config credentials'.");
+            throw new RuntimeException("No server specified. Use --server, or '" + cmd + " config credentials'.");
         }
         if (config.getRealm() == null && config.getExternalToken() == null) {
-            throw new RuntimeException("No realm or token specified. Use --realm, --token, or '" + OsUtil.CMD + " config credentials'.");
+            throw new RuntimeException("No realm or token specified. Use --realm, --token, or '" + cmd + " config credentials'.");
         }
-    }
-
-    public static void checkAuthInfo(ConfigData config) {
-        checkServerInfo(config);
     }
 
     public static boolean credentialsAvailable(ConfigData config) {

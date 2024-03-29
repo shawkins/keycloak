@@ -3,9 +3,9 @@ package org.keycloak.client.registration.cli.util;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.keycloak.client.registration.cli.common.AttributeKey;
-import org.keycloak.client.registration.cli.common.AttributeKey.Component;
-import org.keycloak.client.registration.cli.common.AttributeOperation;
+import org.keycloak.client.admin.cli.common.AttributeKey;
+import org.keycloak.client.admin.cli.common.AttributeKey.Component;
+import org.keycloak.client.admin.cli.common.AttributeOperation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -18,8 +18,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.keycloak.client.registration.cli.common.AttributeOperation.Type.DELETE;
-import static org.keycloak.client.registration.cli.common.AttributeOperation.Type.SET;
+import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.DELETE;
+import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.SET;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>

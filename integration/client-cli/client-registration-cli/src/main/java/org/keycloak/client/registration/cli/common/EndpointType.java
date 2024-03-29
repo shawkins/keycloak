@@ -17,6 +17,8 @@
 
 package org.keycloak.client.registration.cli.common;
 
+import org.keycloak.client.admin.cli.util.HttpUtil;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,5 +61,17 @@ public enum EndpointType {
 
     public String getName() {
         return preferredName;
+    }
+
+    public static String getExpectedContentType(EndpointType type) {
+        switch (type) {
+            case DEFAULT:
+            case OIDC:
+                return HttpUtil.APPLICATION_JSON;
+            case SAML2:
+                return HttpUtil.APPLICATION_XML;
+            default:
+                throw new RuntimeException("Unsupported endpoint type: " + type);
+        }
     }
 }

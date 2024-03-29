@@ -25,8 +25,8 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import org.keycloak.client.registration.cli.EndpointTypeConverter;
-import org.keycloak.client.registration.cli.common.AttributeOperation;
-import org.keycloak.client.registration.cli.config.ConfigData;
+import org.keycloak.client.admin.cli.common.AttributeOperation;
+import org.keycloak.client.admin.cli.config.ConfigData;
 import org.keycloak.client.registration.cli.common.CmdStdinContext;
 import org.keycloak.client.registration.cli.common.EndpointType;
 import org.keycloak.client.registration.cli.util.ParseUtil;
@@ -43,29 +43,28 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.keycloak.client.registration.cli.common.AttributeOperation.Type.DELETE;
-import static org.keycloak.client.registration.cli.common.AttributeOperation.Type.SET;
-import static org.keycloak.client.registration.cli.util.AuthUtil.ensureToken;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.credentialsAvailable;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.getRegistrationToken;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.loadConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.saveMergeConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.setRegistrationToken;
+import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.DELETE;
+import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.SET;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.credentialsAvailable;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.getRegistrationToken;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.setRegistrationToken;
 import static org.keycloak.client.registration.cli.common.EndpointType.DEFAULT;
 import static org.keycloak.client.registration.cli.common.EndpointType.OIDC;
-import static org.keycloak.client.registration.cli.util.HttpUtil.doGet;
-import static org.keycloak.client.registration.cli.util.HttpUtil.doPut;
-import static org.keycloak.client.registration.cli.util.HttpUtil.urlencode;
-import static org.keycloak.client.registration.cli.util.IoUtil.printOut;
-import static org.keycloak.client.registration.cli.util.IoUtil.warnfErr;
-import static org.keycloak.client.registration.cli.util.IoUtil.readFully;
-import static org.keycloak.client.registration.cli.util.HttpUtil.APPLICATION_JSON;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.HttpUtil.doGet;
+import static org.keycloak.client.admin.cli.util.HttpUtil.doPut;
+import static org.keycloak.client.admin.cli.util.HttpUtil.urlencode;
+import static org.keycloak.client.admin.cli.util.IoUtil.printOut;
+import static org.keycloak.client.admin.cli.util.IoUtil.warnfErr;
+import static org.keycloak.client.admin.cli.util.IoUtil.readFully;
+import static org.keycloak.client.admin.cli.util.HttpUtil.APPLICATION_JSON;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.util.ParseUtil.mergeAttributes;
 import static org.keycloak.client.registration.cli.util.ParseUtil.parseFileOrStdin;
-import static org.keycloak.client.registration.cli.util.ParseUtil.parseKeyVal;
+import static org.keycloak.client.admin.cli.util.ParseUtil.parseKeyVal;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>

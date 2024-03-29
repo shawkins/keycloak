@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-import org.keycloak.client.registration.cli.config.ConfigData;
+import org.keycloak.client.admin.cli.config.ConfigData;
 import org.keycloak.client.registration.cli.util.ParseUtil;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.util.JsonSerialization;
@@ -33,18 +33,17 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 
-import static org.keycloak.client.registration.cli.util.AuthUtil.ensureToken;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.loadConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.saveMergeConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.setRegistrationToken;
-import static org.keycloak.client.registration.cli.util.HttpUtil.APPLICATION_JSON;
-import static org.keycloak.client.registration.cli.util.HttpUtil.doGet;
-import static org.keycloak.client.registration.cli.util.HttpUtil.doPost;
-import static org.keycloak.client.registration.cli.util.IoUtil.printOut;
-import static org.keycloak.client.registration.cli.util.IoUtil.warnfOut;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.setRegistrationToken;
+import static org.keycloak.client.admin.cli.util.HttpUtil.APPLICATION_JSON;
+import static org.keycloak.client.admin.cli.util.HttpUtil.doGet;
+import static org.keycloak.client.admin.cli.util.HttpUtil.doPost;
+import static org.keycloak.client.admin.cli.util.IoUtil.printOut;
+import static org.keycloak.client.admin.cli.util.IoUtil.warnfOut;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>

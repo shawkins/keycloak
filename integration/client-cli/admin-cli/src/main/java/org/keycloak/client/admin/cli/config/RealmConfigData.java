@@ -19,6 +19,10 @@ package org.keycloak.client.admin.cli.config;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
@@ -47,6 +51,11 @@ public class RealmConfigData {
 
     private Long sigExpiresAt;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String initialToken;
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, String> clients = new LinkedHashMap<String, String>();
 
     public String serverUrl() {
         return serverUrl;
@@ -136,6 +145,18 @@ public class RealmConfigData {
         this.sigExpiresAt = sigExpiresAt;
     }
 
+    public String getInitialToken() {
+        return initialToken;
+    }
+
+    public void setInitialToken(String initialToken) {
+        this.initialToken = initialToken;
+    }
+
+    public Map<String, String> getClients() {
+        return clients;
+    }
+
     public void merge(RealmConfigData source) {
         serverUrl = source.serverUrl;
         realm = source.realm;
@@ -148,6 +169,26 @@ public class RealmConfigData {
         expiresAt = source.expiresAt;
         refreshExpiresAt = source.refreshExpiresAt;
         sigExpiresAt = source.sigExpiresAt;
+        initialToken = source.initialToken;
+
+        mergeClients(source);
+    }
+
+    private void mergeClients(RealmConfigData source) {
+        if (source.clients != null) {
+            if (clients == null) {
+                clients = source.clients;
+            } else {
+                for (String key: source.clients.keySet()) {
+                    String val = source.clients.get(key);
+                    if (!"".equals(val)) {
+                        clients.put(key, val);
+                    } else {
+                        clients.remove(key);
+                    }
+                }
+            }
+        }
     }
 
     public void mergeRefreshTokens(RealmConfigData source) {
@@ -179,6 +220,8 @@ public class RealmConfigData {
         data.expiresAt = expiresAt;
         data.refreshExpiresAt = refreshExpiresAt;
         data.sigExpiresAt = sigExpiresAt;
+        data.initialToken = initialToken;
+        data.clients = new LinkedHashMap<>(clients);
         return data;
     }
 }

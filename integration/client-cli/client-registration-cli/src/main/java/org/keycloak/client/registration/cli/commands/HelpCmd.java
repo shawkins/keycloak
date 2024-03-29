@@ -5,7 +5,7 @@ import java.util.List;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-import static org.keycloak.client.registration.cli.util.IoUtil.printOut;
+import static org.keycloak.client.admin.cli.util.IoUtil.printOut;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>

@@ -38,7 +38,7 @@ import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.saveTokens;
 import static org.keycloak.client.admin.cli.util.IoUtil.printErr;
 import static org.keycloak.client.admin.cli.util.IoUtil.readSecret;
-import static org.keycloak.client.admin.cli.util.OsUtil.CMD;
+import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.admin.cli.util.OsUtil.OS_ARCH;
 import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 

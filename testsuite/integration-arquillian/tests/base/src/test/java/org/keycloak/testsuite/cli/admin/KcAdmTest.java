@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
-import static org.keycloak.client.admin.cli.util.OsUtil.CMD;
+import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.admin.cli.util.OsUtil.EOL;
 import static org.keycloak.testsuite.cli.KcAdmExec.execute;
 

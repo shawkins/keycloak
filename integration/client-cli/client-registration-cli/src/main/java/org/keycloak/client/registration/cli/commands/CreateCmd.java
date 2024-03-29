@@ -18,11 +18,11 @@
 package org.keycloak.client.registration.cli.commands;
 
 import org.keycloak.client.registration.cli.EndpointTypeConverter;
-import org.keycloak.client.registration.cli.common.AttributeOperation;
+import org.keycloak.client.admin.cli.common.AttributeOperation;
 import org.keycloak.client.registration.cli.common.CmdStdinContext;
 import org.keycloak.client.registration.cli.common.EndpointType;
-import org.keycloak.client.registration.cli.config.ConfigData;
-import org.keycloak.client.registration.cli.util.HttpUtil;
+import org.keycloak.client.admin.cli.config.ConfigData;
+import org.keycloak.client.admin.cli.util.HttpUtil;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
 import org.keycloak.util.JsonSerialization;
@@ -39,28 +39,26 @@ import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-import static org.keycloak.client.registration.cli.common.AttributeOperation.Type.SET;
+import static org.keycloak.client.admin.cli.common.AttributeOperation.Type.SET;
 import static org.keycloak.client.registration.cli.common.EndpointType.DEFAULT;
 import static org.keycloak.client.registration.cli.common.EndpointType.OIDC;
 import static org.keycloak.client.registration.cli.common.EndpointType.SAML2;
-import static org.keycloak.client.registration.cli.util.AuthUtil.ensureToken;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.credentialsAvailable;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.loadConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.saveMergeConfig;
-import static org.keycloak.client.registration.cli.util.ConfigUtil.setRegistrationToken;
-import static org.keycloak.client.registration.cli.util.HttpUtil.doPost;
-import static org.keycloak.client.registration.cli.util.HttpUtil.getExpectedContentType;
-import static org.keycloak.client.registration.cli.util.IoUtil.printErr;
-import static org.keycloak.client.registration.cli.util.IoUtil.printOut;
-import static org.keycloak.client.registration.cli.util.IoUtil.readFully;
-import static org.keycloak.client.registration.cli.util.IoUtil.readSecret;
-import static org.keycloak.client.registration.cli.util.OsUtil.CMD;
-import static org.keycloak.client.registration.cli.util.OsUtil.OS_ARCH;
-import static org.keycloak.client.registration.cli.util.OsUtil.PROMPT;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.credentialsAvailable;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
+import static org.keycloak.client.admin.cli.util.ConfigUtil.setRegistrationToken;
+import static org.keycloak.client.admin.cli.util.HttpUtil.doPost;
+import static org.keycloak.client.admin.cli.util.IoUtil.printErr;
+import static org.keycloak.client.admin.cli.util.IoUtil.printOut;
+import static org.keycloak.client.admin.cli.util.IoUtil.readFully;
+import static org.keycloak.client.admin.cli.util.IoUtil.readSecret;
+import static org.keycloak.client.registration.cli.KcRegMain.CMD;
+import static org.keycloak.client.admin.cli.util.OsUtil.OS_ARCH;
+import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.util.ParseUtil.mergeAttributes;
 import static org.keycloak.client.registration.cli.util.ParseUtil.parseFileOrStdin;
-import static org.keycloak.client.registration.cli.util.ParseUtil.parseKeyVal;
+import static org.keycloak.client.admin.cli.util.ParseUtil.parseKeyVal;
 
 /**
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
@@ -129,7 +127,7 @@ public class CreateCmd extends AbstractAuthOptionsCmd {
             ctx = mergeAttributes(ctx, attrs);
         }
 
-        String contentType = getExpectedContentType(ctx.getEndpointType());
+        String contentType = EndpointType.getExpectedContentType(ctx.getEndpointType());
 
         ConfigData config = loadConfig();
         config = copyWithServerInfo(config);

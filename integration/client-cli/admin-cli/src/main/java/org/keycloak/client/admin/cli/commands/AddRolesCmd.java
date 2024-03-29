@@ -35,11 +35,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.keycloak.client.admin.cli.util.AuthUtil.ensureToken;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.credentialsAvailable;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.loadConfig;
-import static org.keycloak.client.admin.cli.util.OsUtil.CMD;
+import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
 /**

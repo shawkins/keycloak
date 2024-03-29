@@ -27,7 +27,7 @@ import picocli.CommandLine.Parameters;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.DEFAULT_CONFIG_FILE_STRING;
 import static org.keycloak.client.admin.cli.util.ConfigUtil.saveMergeConfig;
 import static org.keycloak.client.admin.cli.util.IoUtil.readSecret;
-import static org.keycloak.client.admin.cli.util.OsUtil.CMD;
+import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.admin.cli.util.OsUtil.OS_ARCH;
 import static org.keycloak.client.admin.cli.util.OsUtil.PROMPT;
 
