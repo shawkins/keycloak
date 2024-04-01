@@ -2,7 +2,7 @@ package org.keycloak.testsuite.cli.registration;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.keycloak.client.admin.cli.config.FileConfigHandler;
+import org.keycloak.client.cli.config.FileConfigHandler;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.testsuite.cli.KcRegExec;
 import org.keycloak.testsuite.util.TempFileResource;
