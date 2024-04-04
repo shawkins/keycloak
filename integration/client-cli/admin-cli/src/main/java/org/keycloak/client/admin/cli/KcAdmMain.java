@@ -17,6 +17,7 @@
 package org.keycloak.client.admin.cli;
 
 import org.keycloak.client.admin.cli.commands.KcAdmCmd;
+import org.keycloak.client.cli.common.CommandState;
 import org.keycloak.client.cli.common.Globals;
 import org.keycloak.client.cli.util.OsUtil;
 
@@ -30,6 +31,20 @@ public class KcAdmMain {
     public static final String DEFAULT_CONFIG_FILE_STRING = OsUtil.OS_ARCH.isWindows() ? "%HOMEDRIVE%%HOMEPATH%\\.keycloak\\kcadm.config" : "~/.keycloak/kcadm.config";
 
     public static final String CMD = OsUtil.OS_ARCH.isWindows() ? "kcadm.bat" : "kcadm.sh";
+
+    public static final CommandState COMMAND_STATE = new CommandState() {
+
+        @Override
+        public String getCommand() {
+            return CMD;
+        }
+
+        @Override
+        public String getDefaultConfigFilePath() {
+            return DEFAULT_CONFIG_FILE_PATH;
+        }
+
+    };
 
     public static void main(String [] args) {
         Globals.main(args, new KcAdmCmd(), CMD, DEFAULT_CONFIG_FILE_STRING);

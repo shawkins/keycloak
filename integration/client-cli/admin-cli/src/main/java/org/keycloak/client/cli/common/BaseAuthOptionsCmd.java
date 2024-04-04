@@ -201,7 +201,7 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
                 initConfigData(config);
                 ConfigUtil.setupInMemoryHandler(config);
 
-                BaseConfigCredentialsCmd login = commandState.configCredentialsCmd();
+                BaseConfigCredentialsCmd login = new BaseConfigCredentialsCmd(commandState);
                 login.initFromParent(this);
                 login.init(config);
                 login.process();

@@ -23,6 +23,4 @@ public interface CommandState {
 
     String getDefaultConfigFilePath();
 
-    BaseConfigCredentialsCmd configCredentialsCmd();
-
 }

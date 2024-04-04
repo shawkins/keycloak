@@ -17,6 +17,7 @@
 package org.keycloak.client.registration.cli.commands;
 
 import org.keycloak.client.cli.common.BaseConfigTruststoreCmd;
+import org.keycloak.client.registration.cli.KcRegMain;
 
 import picocli.CommandLine.Command;
 
@@ -27,7 +28,7 @@ import picocli.CommandLine.Command;
 public class ConfigTruststoreCmd extends BaseConfigTruststoreCmd {
 
     public ConfigTruststoreCmd() {
-        super(new RegCommandState());
+        super(KcRegMain.COMMAND_STATE);
     }
 
 }

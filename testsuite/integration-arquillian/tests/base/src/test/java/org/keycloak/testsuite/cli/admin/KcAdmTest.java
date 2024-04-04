@@ -67,7 +67,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
         exe = KcAdmExec.execute("config credentials");
         assertExitCodeAndStdErrSize(exe, 2, 0);
         Assert.assertTrue("help message returned", exe.stdoutLines().size() > 10);
-        Assert.assertEquals("help message", "Usage: " + CMD + " config credentials --server SERVER_URL --realm REALM --user USER [--password PASSWORD] [ARGUMENTS]", exe.stdoutLines().get(1));
+        Assert.assertEquals("help message", "       " + CMD + " config credentials --server SERVER_URL --realm REALM --user USER [--password PASSWORD] [ARGUMENTS]", exe.stdoutLines().get(1));
 
         exe = KcAdmExec.execute("config truststore");
         assertExitCodeAndStdErrSize(exe, 2, 0);
@@ -185,7 +185,7 @@ public class KcAdmTest extends AbstractAdmCliTest {
         exe = KcAdmExec.execute("config credentials --help");
         assertExitCodeAndStdErrSize(exe, 0, 0);
         Assert.assertEquals("stdout line",
-                "Usage: " + CMD + " config credentials --server SERVER_URL --realm REALM --user USER [--password PASSWORD] [ARGUMENTS]",
+                "       " + CMD + " config credentials --server SERVER_URL --realm REALM --user USER [--password PASSWORD] [ARGUMENTS]",
                 exe.stdoutLines().get(1));
 
         exe = KcAdmExec.execute("config truststore --help");

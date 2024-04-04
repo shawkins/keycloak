@@ -16,6 +16,7 @@
  */
 package org.keycloak.client.admin.cli.commands;
 
+import org.keycloak.client.admin.cli.KcAdmMain;
 import org.keycloak.client.cli.common.BaseAuthOptionsCmd;
 import org.keycloak.client.cli.config.ConfigData;
 
@@ -39,7 +40,7 @@ public abstract class AbstractAuthOptionsCmd extends BaseAuthOptionsCmd implemen
     }
 
     public AbstractAuthOptionsCmd() {
-        super(new AdminCommandState());
+        super(KcAdmMain.COMMAND_STATE);
     }
 
     protected String getTargetRealm(ConfigData config) {

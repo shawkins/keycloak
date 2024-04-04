@@ -16,6 +16,7 @@
  */
 package org.keycloak.client.admin.cli.commands;
 
+import org.keycloak.client.admin.cli.KcAdmMain;
 import org.keycloak.client.cli.common.BaseConfigTruststoreCmd;
 
 import picocli.CommandLine.Command;
@@ -27,7 +28,7 @@ import picocli.CommandLine.Command;
 public class ConfigTruststoreCmd extends BaseConfigTruststoreCmd {
 
     public ConfigTruststoreCmd() {
-        super(new AdminCommandState());
+        super(KcAdmMain.COMMAND_STATE);
     }
 
 }
