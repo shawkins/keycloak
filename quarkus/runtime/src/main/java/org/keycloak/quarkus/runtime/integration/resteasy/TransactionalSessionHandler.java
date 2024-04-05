@@ -39,8 +39,6 @@ public final class TransactionalSessionHandler implements ServerRestHandler {
             // start the thread-bound transaction and associate the thread-bound KeycloakSession
             currentSession.getTransactionManager().begin();
             Resteasy.pushContext(KeycloakSession.class, currentSession);
-            // the CloseSessionFilter is needed because it runs sooner than this callback
-            // this is just a catch-all if the CloseSessionFilter doesn't get a chance to run
             requestContext.registerCompletionCallback(ignored -> {
                 try {
                     close(currentSession);
