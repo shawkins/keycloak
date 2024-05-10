@@ -34,6 +34,9 @@ public abstract class AbstractExportImportCommand extends AbstractStartCommand i
     @CommandLine.Mixin
     HelpAllMixin helpAllMixin;
 
+    //@Option -- something named local or attach
+    private boolean local;
+
     protected AbstractExportImportCommand(String action) {
         this.action = action;
     }
@@ -45,6 +48,15 @@ public abstract class AbstractExportImportCommand extends AbstractStartCommand i
         Environment.setProfile(Environment.IMPORT_EXPORT_MODE);
 
         super.run();
+    }
+
+    @Override
+    protected void doRun(CommandLine cmd) {
+        if (local) {
+            // do some form of IPC
+        } else {
+            super.doRun(cmd);
+        }
     }
 
     @Override

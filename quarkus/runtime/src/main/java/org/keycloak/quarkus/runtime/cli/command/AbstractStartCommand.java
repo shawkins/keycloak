@@ -32,6 +32,10 @@ public abstract class AbstractStartCommand extends AbstractCommand implements Ru
         CommandLine cmd = spec.commandLine();
         HttpPropertyMappers.validateConfig();
         validateConfig();
+        doRun(cmd);
+    }
+
+    protected void doRun(CommandLine cmd) {
         KeycloakMain.start((ExecutionExceptionHandler) cmd.getExecutionExceptionHandler(), cmd.getErr(), cmd.getParseResult().originalArgs().toArray(new String[0]));
     }
 

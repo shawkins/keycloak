@@ -18,10 +18,13 @@ package org.keycloak.services.resources;
 
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
+import org.keycloak.Config.Scope;
 import org.keycloak.common.crypto.CryptoIntegration;
 import org.keycloak.config.ConfigProviderFactory;
+import org.keycloak.executors.ExecutorsProvider;
 import org.keycloak.exportimport.ExportImportConfig;
 import org.keycloak.exportimport.ExportImportManager;
+import org.keycloak.exportimport.ExportProvider;
 import org.keycloak.exportimport.Strategy;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -48,15 +51,22 @@ import org.keycloak.util.JsonSerialization;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
+import java.util.concurrent.Executor;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
 import jakarta.ws.rs.core.Application;
+
+import static org.keycloak.exportimport.ExportImportConfig.PROVIDER;
+import static org.keycloak.exportimport.ExportImportConfig.PROVIDER_DEFAULT;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -70,6 +80,8 @@ public abstract class KeycloakApplication extends Application {
     protected final PlatformProvider platform = Platform.getPlatform();
 
     private static KeycloakSessionFactory sessionFactory;
+
+    private CommandPoller commandPoller;
 
     public KeycloakApplication() {
         try {
@@ -91,6 +103,7 @@ public abstract class KeycloakApplication extends Application {
         KeycloakApplication.sessionFactory = createSessionFactory();
 
         ExportImportManager[] exportImportManager = new ExportImportManager[1];
+        Executor[] executor = new Executor[1];
 
         KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
             @Override
@@ -104,6 +117,7 @@ public abstract class KeycloakApplication extends Application {
                 } finally {
                     dbLock.releaseLock();
                 }
+                executor[0] = session.getProvider(ExecutorsProvider.class).getExecutor("command-poller");
             }
         });
 
@@ -112,11 +126,56 @@ public abstract class KeycloakApplication extends Application {
         }
 
         sessionFactory.publish(new PostMigrationEvent(sessionFactory));
+        try {
+            Path dir = Paths.get(System.getProperty("kc.home.dir")).resolve("data").resolve("local-commands");
+            dir.toFile().mkdirs();
+            commandPoller = new CommandPoller(dir);
+            executor[0].execute(() -> {
+                try {
+                    commandPoller.poll(this);
+                } catch (InterruptedException e) {
+                    Thread.interrupted();
+                    throw new RuntimeException(e);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void shutdown() {
         if (sessionFactory != null)
             sessionFactory.close();
+        if (commandPoller != null) {
+            commandPoller.close();
+        }
+    }
+
+    void export(Scope config) {
+        KeycloakModelUtils.runJobInTransaction(sessionFactory, session -> {
+            // taken from ExportImportManager
+            String providerId = System.getProperty(PROVIDER, Config.scope("export").get("exporter", PROVIDER_DEFAULT));
+            var providerFactory = session.getKeycloakSessionFactory().getProviderFactory(ExportProvider.class, providerId);
+            if (providerFactory == null) {
+                throw new RuntimeException("Export provider '" + providerId + "' not found");
+            }
+            try {
+                providerFactory = providerFactory.getClass().getConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | IllegalArgumentException e) {
+                throw new RuntimeException(e);
+            }
+            providerFactory.init(config);
+            providerFactory.postInit(sessionFactory);
+            ExportProvider export = providerFactory.create(session);
+            try {
+                export.exportModel();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to run export", e);
+            }
+            providerFactory.close();
+        });
     }
 
     // Bootstrap master realm, import realms and create admin user.
