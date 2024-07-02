@@ -137,7 +137,7 @@ public class ApplianceBootstrap {
         RoleModel adminRole = realm.getRole(AdminRoles.ADMIN);
         adminUser.grantRole(adminRole);
 
-        ServicesLogger.LOGGER.addUserSuccess(username, Config.getAdminRealm());
+        ServicesLogger.LOGGER.createdTemporaryAdminUser(username);
     }
 
     public void createTemporaryMasterRealmAdminService(String clientId, String clientSecret /*, Integer expriationMinutes*/) {
@@ -163,6 +163,8 @@ public class ApplianceBootstrap {
 
         // TODO: set temporary
         // also set the expiration - could be relative to a creation timestamp, or computed
+
+        ServicesLogger.LOGGER.createdTemporaryAdminService(clientId);
     }
 
     public void createMasterRealmUser(String username, String password) {
