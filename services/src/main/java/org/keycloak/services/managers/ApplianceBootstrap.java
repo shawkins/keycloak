@@ -28,8 +28,7 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.DefaultKeyProviders;
-import org.keycloak.models.utils.KeycloakModelUtils;
-import org.keycloak.protocol.oidc.OIDCLoginProtocol;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.userprofile.config.UPAttribute;
 import org.keycloak.representations.userprofile.config.UPConfig;
@@ -148,15 +147,17 @@ public class ApplianceBootstrap {
         clientId = StringUtil.isBlank(clientId) ? DEFAULT_TEMP_ADMIN_SERVICE : clientId;
         //expriationMinutes = expriationMinutes == null ? DEFAULT_TEMP_ADMIN_EXPIRATION : expriationMinutes;
 
-        ClientModel adminClient = session.clients().addClient(realm, clientId);
+        ClientRepresentation adminClient = new ClientRepresentation();
+        adminClient.setClientId(clientId);
         adminClient.setEnabled(true);
         adminClient.setServiceAccountsEnabled(true);
+        adminClient.setPublicClient(false);
         adminClient.setSecret(clientSecret);
-        adminClient.setProtocol(OIDCLoginProtocol.LOGIN_PROTOCOL);
-        adminClient.setClientAuthenticatorType(KeycloakModelUtils.AUTH_TYPE_CLIENT_SECRET);
-        
-        new ClientManager(new RealmManager(session)).enableServiceAccount(adminClient);
-        UserModel serviceAccount = session.users().getServiceAccount(adminClient);
+
+        ClientModel adminClientModel = ClientManager.createClient(session, realm, adminClient);
+
+        new ClientManager(new RealmManager(session)).enableServiceAccount(adminClientModel);
+        UserModel serviceAccount = session.users().getServiceAccount(adminClientModel);
         RoleModel adminRole = realm.getRole(AdminRoles.ADMIN);
         serviceAccount.grantRole(adminRole);
 
