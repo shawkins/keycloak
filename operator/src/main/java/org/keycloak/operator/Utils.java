@@ -73,7 +73,7 @@ public final class Utils {
         return labels;
     }
 
-    public static <T extends HasMetadata> Optional<T> getByName(Class<T> clazz, Function<Keycloak, String> nameFunction, Keycloak primary, Context<Keycloak> context) {
+    public static <T extends HasMetadata, P extends HasMetadata> Optional<T> getByName(Class<T> clazz, Function<P, String> nameFunction, P primary, Context<P> context) {
         InformerEventSource<T, Keycloak> ies = (InformerEventSource<T, Keycloak>) context
                 .eventSourceRetriever().getResourceEventSourceFor(clazz);
     

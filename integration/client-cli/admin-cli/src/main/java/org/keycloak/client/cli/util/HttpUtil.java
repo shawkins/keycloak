@@ -252,7 +252,7 @@ public class HttpUtil {
             throw new RuntimeException("Truststore file not found: " + file.getAbsolutePath());
         }
         SSLContext theContext = SSLContexts.custom()
-                .useProtocol("TLS")
+                .setProtocol("TLS")
                 .loadTrustMaterial(file, password == null ? null : password.toCharArray(), TrustSelfSignedStrategy.INSTANCE)
                 .build();
         sslsf = new SSLConnectionSocketFactory(theContext);

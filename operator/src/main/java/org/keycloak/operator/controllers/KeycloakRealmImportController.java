@@ -33,6 +33,7 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.quarkus.logging.Log;
 
 import org.keycloak.operator.Config;
+import org.keycloak.operator.Constants;
 import org.keycloak.operator.crds.v2alpha1.realmimport.KeycloakRealmImport;
 import org.keycloak.operator.crds.v2alpha1.realmimport.KeycloakRealmImportStatus;
 import org.keycloak.operator.crds.v2alpha1.realmimport.KeycloakRealmImportStatusBuilder;
@@ -40,7 +41,6 @@ import org.keycloak.operator.crds.v2alpha1.realmimport.KeycloakRealmImportStatus
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -102,7 +102,7 @@ public class KeycloakRealmImportController implements Reconciler<KeycloakRealmIm
                 .getConditions()
                 .stream()
                 .anyMatch(c -> c.getType().equals(KeycloakRealmImportStatusCondition.DONE) && !Boolean.TRUE.equals(c.getStatus()))) {
-            updateControl.rescheduleAfter(10, TimeUnit.SECONDS);
+            updateControl.rescheduleAfter(Constants.RETRY_DURATION);
         }
 
         return updateControl;
@@ -116,7 +116,7 @@ public class KeycloakRealmImportController implements Reconciler<KeycloakRealmIm
                 .build();
 
         realm.setStatus(status);
-        return ErrorStatusUpdateControl.updateStatus(realm);
+        return ErrorStatusUpdateControl.updateStatus(realm).rescheduleAfter(Constants.RETRY_DURATION);
     }
 
     public void updateStatus(KeycloakRealmImportStatusBuilder status, KeycloakRealmImport realmCR, Job existingJob, StatefulSet existingDeployment) {

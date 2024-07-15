@@ -155,7 +155,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
         var statefulSet = context.getSecondaryResource(StatefulSet.class);
 
         if (!status.isReady() || statefulSet.filter(watchedResources::hasMissing).isPresent()) {
-            updateControl.rescheduleAfter(10, TimeUnit.SECONDS);
+            updateControl.rescheduleAfter(Constants.RETRY_DURATION);
         } else if (statefulSet.filter(watchedResources::isWatching).isPresent()) {
             updateControl.rescheduleAfter(config.keycloak().pollIntervalSeconds(), TimeUnit.SECONDS);
         }
@@ -172,7 +172,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
 
         kc.setStatus(status);
 
-        return ErrorStatusUpdateControl.updateStatus(kc);
+        return ErrorStatusUpdateControl.updateStatus(kc).rescheduleAfter(Constants.RETRY_DURATION);
     }
 
     public static Optional<String> generateOpenshiftHostname(Keycloak keycloak, Context<Keycloak> context) {

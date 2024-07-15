@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -81,13 +82,17 @@ public class WatchedResources {
     }
 
     public <T extends HasMetadata> String getHash(List<T> current) {
+        return getHash(current, WatchedResources::getData);
+    }
+    
+    public static <T, R> String getHash(List<T> current, Function<T, R> extractor) {
         try {
             // using hashes as it's more robust than resource versions that can change e.g.
             // just when adding a label
             // Uses a fips compliant hash
             var messageDigest = MessageDigest.getInstance("SHA-256");
 
-            current.stream().map(s -> Serialization.asYaml(getData(s)).getBytes(StandardCharsets.UTF_8))
+            current.stream().map(s -> Serialization.asYaml(extractor.apply(s)).getBytes(StandardCharsets.UTF_8))
                     .forEachOrdered(s -> messageDigest.update(s));
 
             return new BigInteger(1, messageDigest.digest()).toString(16);
