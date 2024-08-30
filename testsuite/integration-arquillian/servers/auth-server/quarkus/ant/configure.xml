@@ -6,10 +6,14 @@
         <exec osfamily="unix" dir="${auth.server.home}/bin" executable="./kc.sh" failonerror="true">
             <arg value="build"/>
             <arg value="--http-relative-path=/auth"/>
+            <arg value="--health-enabled=true"/>
+            <arg value="--metrics-enabled=true"/>
         </exec>
         <exec osfamily="windows" executable="${auth.server.home}/bin/kc.bat" failonerror="true">
             <arg value="build"/>
             <arg value="--http-relative-path=/auth"/>
+            <arg value="--health-enabled=true"/>
+            <arg value="--metrics-enabled=true"/>
         </exec>
     </target>
 

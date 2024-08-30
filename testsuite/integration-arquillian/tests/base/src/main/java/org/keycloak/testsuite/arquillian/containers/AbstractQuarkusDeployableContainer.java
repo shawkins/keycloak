@@ -232,7 +232,8 @@ public abstract class AbstractQuarkusDeployableContainer implements DeployableCo
     private static void prepareCommandsForRebuilding(List<String> commands) {
         commands.removeIf("--optimized"::equals);
         commands.add("--http-relative-path=/auth");
-        commands.add("--health-enabled=true"); // expose something to management interface to turn it on
+        commands.add("--health-enabled=true"); // for health checks that are used here to wait for readiness
+        commands.add("--metrics-enabled=true"); // for DB health checks
     }
 
     protected void addFeaturesOption(List<String> commands) {
@@ -307,9 +308,7 @@ public abstract class AbstractQuarkusDeployableContainer implements DeployableCo
 
     protected void waitForReadiness() throws Exception {
         SuiteContext suiteContext = this.suiteContext.get();
-        //TODO: not sure if the best endpoint but it makes sure that everything is properly initialized. Once we have
-        // support for MP Health this should change
-        URL contextRoot = new URL(getBaseUrl(suiteContext) + "/auth/realms/master/");
+        URL contextRoot = new URL(getManagementBaseUrl(suiteContext) + "/auth/health");
         HttpURLConnection connection;
         long startTime = System.currentTimeMillis();
 
@@ -350,16 +349,20 @@ public abstract class AbstractQuarkusDeployableContainer implements DeployableCo
 
     protected abstract void checkLiveness() throws Exception;
 
-    private URL getBaseUrl(SuiteContext suiteContext) throws MalformedURLException {
+    private URL getManagementBaseUrl(SuiteContext suiteContext) throws MalformedURLException {
         URL baseUrl = suiteContext.getAuthServerInfo().getContextRoot();
 
-        // might be running behind a load balancer
-        if ("https".equals(baseUrl.getProtocol())) {
-            baseUrl = new URL(baseUrl.toString().replace(String.valueOf(baseUrl.getPort()), String.valueOf(configuration.getBindHttpsPort())));
+        if (suiteContext.isAuthServerMigrationEnabled()) { // Keycloak <25 does not support management port
+            // might be running behind a load balancer
+            if ("https".equals(baseUrl.getProtocol())) {
+                baseUrl = new URL(baseUrl.toString().replace(String.valueOf(baseUrl.getPort()), String.valueOf(configuration.getBindHttpsPort())));
+            } else {
+                baseUrl = new URL(baseUrl.toString().replace(String.valueOf(baseUrl.getPort()), String.valueOf(configuration.getBindHttpPort())));
+            }
+            return baseUrl;
         } else {
-            baseUrl = new URL(baseUrl.toString().replace(String.valueOf(baseUrl.getPort()), String.valueOf(configuration.getBindHttpPort())));
+            return new URL(baseUrl.toString().replace(String.valueOf(baseUrl.getPort()), String.valueOf(configuration.getManagementPort())));
         }
-        return baseUrl;
     }
 
     private HostnameVerifier createInsecureHostnameVerifier() {
