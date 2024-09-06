@@ -87,6 +87,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -249,7 +250,8 @@ public abstract class AbstractKeycloakTest {
                     testingClient.testing().removeUserSessions(r.getRealm());
                 } catch (Exception e) {
                     log.errorf("Failed to remove user sessions for realm %s", r.getRealm());
-                    log.error("Realms rep: " + adminClient.realm(r.getRealm()).toRepresentation());
+                    log.error("List of available realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).toList());
+                    throw e;
                 }
             });
 
