@@ -19,6 +19,7 @@ package org.keycloak.testsuite.rest;
 
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -1109,7 +1110,8 @@ public class TestingResourceProvider implements RealmResourceProvider {
         RealmProvider realmProvider = session.getProvider(RealmProvider.class);
         RealmModel realm = realmProvider.getRealmByName(realmName);
         if (realm == null) {
-            throw new NotFoundException("Realm not found");
+//            throw new NotFoundException("Realm not found");
+            throw new RuntimeException("Realm not found");
         }
         return realm;
     }
