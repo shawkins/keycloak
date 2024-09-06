@@ -47,7 +47,7 @@ public final class TestContext {
     private final List<ContainerInfo> appServerBackendsInfo = new ArrayList<>();
 
     private boolean adminLoggedIn;
-    
+
     private Keycloak adminClient;
     private KeycloakTestingClient testingClient;
     private List<RealmRepresentation> testRealmReps = new ArrayList<>();
@@ -86,7 +86,7 @@ public final class TestContext {
     public List<ContainerInfo> getAppServerBackendsInfo() {
         return appServerBackendsInfo;
     }
-    
+
     public void setAppServerBackendsInfo(List<ContainerInfo> appServerBackendsInfo) {
         Collections.sort(appServerBackendsInfo);
         this.appServerBackendsInfo.addAll(appServerBackendsInfo);
@@ -117,16 +117,16 @@ public final class TestContext {
     public boolean isAdapterContainerEnabledCluster() {
         if (!isAdapterTest()) return false; //no adapter test
         if (appServerBackendsInfo.isEmpty()) return false; //no adapter clustered test
-        
+
         Set<String> appServerQualifiers = getAppServerQualifiers(testClass);
-        
+
         String qualifier = appServerBackendsInfo.stream()
                 .map(ContainerInfo::getQualifier)
                 .collect(Collectors.joining(";"));
-        
+
         return appServerQualifiers.contains(qualifier);
     }
-    
+
     public boolean isRelativeAdapterTest() {
         return isAdapterTest()
                 && appServerInfo.getQualifier().equals(
@@ -165,6 +165,14 @@ public final class TestContext {
 
     public List<RealmRepresentation> getTestRealmReps() {
         return testRealmReps;
+    }
+
+    public void reconnectTestingClient() {
+        if (testingClient != null) {
+            testingClient.close();
+        }
+        testingClient = null;
+        getTestingClient();
     }
 
     public void setTestRealmReps(List<RealmRepresentation> testRealmReps) {

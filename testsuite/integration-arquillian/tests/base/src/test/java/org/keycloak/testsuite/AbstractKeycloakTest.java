@@ -200,6 +200,10 @@ public abstract class AbstractKeycloakTest {
     public void reconnectAdminClient() throws Exception {
         testContext.reconnectAdminClient();
         adminClient = testContext.getAdminClient();
+
+        testingClient = null;
+        testContext.reconnectTestingClient();
+        getTestingClient();
     }
 
     /**
