@@ -40,6 +40,7 @@ jobs:
     timeout-minutes: 100
     strategy:
       matrix:
+        group: [6]
         run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       fail-fast: false
     steps:
@@ -51,7 +52,9 @@ jobs:
 
       - name: Run base tests
         run: |
-          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=HostnameV2Test -pl testsuite/integration-arquillian/tests/base 2>&1 | misc/log/trimmer.sh
+          TESTS=`testsuite/integration-arquillian/tests/base/testsuites/base-suite.sh ${{ matrix.group }}`
+          echo "Tests: $TESTS"
+          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=$TESTS -pl testsuite/integration-arquillian/tests/base 2>&1 | misc/log/trimmer.sh
 
       - name: Upload JVM Heapdumps
         if: always()
