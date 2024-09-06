@@ -1107,8 +1107,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
     }
 
     private RealmModel getRealmByName(String realmName) {
-        RealmProvider realmProvider = session.getProvider(RealmProvider.class);
-        RealmModel realm = realmProvider.getRealmByName(realmName);
+        RealmModel realm = session.realms().getRealmByName(realmName);
         if (realm == null) {
 //            throw new NotFoundException("Realm not found");
             throw new RuntimeException("Realm not found");
