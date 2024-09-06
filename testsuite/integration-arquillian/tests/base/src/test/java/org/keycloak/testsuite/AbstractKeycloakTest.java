@@ -240,7 +240,14 @@ public abstract class AbstractKeycloakTest {
         } else {
             log.info("calling all TestCleanup");
             // Remove all sessions
-            testContext.getTestRealmReps().stream().forEach((r)->testingClient.testing().removeUserSessions(r.getRealm()));
+            testContext.getTestRealmReps().stream().forEach(r -> {
+                try {
+                    testingClient.testing().removeUserSessions(r.getRealm());
+                } catch (Exception e) {
+                    log.errorf("Failed to remove user sessions for realm %s", r.getRealm());
+                    log.error("Realms rep: " + adminClient.realm(r.getRealm()).toRepresentation());
+                }
+            });
 
             // Cleanup objects
             for (TestCleanup cleanup : testContext.getCleanups().values()) {
