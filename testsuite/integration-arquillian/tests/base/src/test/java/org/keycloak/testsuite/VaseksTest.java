@@ -33,7 +33,7 @@ public class VaseksTest extends AbstractKeycloakTest {
     @Override
     public void addTestRealms(List<RealmRepresentation> testRealms) {}
 
-    @Test
+//    @Test
     public void test() throws Exception {
         final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {
@@ -47,6 +47,25 @@ public class VaseksTest extends AbstractKeycloakTest {
             List<RealmRepresentation> realms = adminClient.realms().findAll();
             log.info("Post-restart realms: " + realms.stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             assertEquals(i + 2, realms.size());
+        }
+    }
+
+    @Test
+    public void test2() throws Exception {
+        final int realmCount = 50;
+        for (int i = 0; i < realmCount; i++) {
+            RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
+            adminClient.realms().create(realm);
+        }
+
+        for (int i = 0; i < 50; i++) {
+            log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
+            suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
+            suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
+            reconnectAdminClient();
+            List<RealmRepresentation> realms = adminClient.realms().findAll();
+            log.info("Post-restart realms: " + realms.stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
+            assertEquals(realmCount + 1, realms.size());
         }
     }
 }
