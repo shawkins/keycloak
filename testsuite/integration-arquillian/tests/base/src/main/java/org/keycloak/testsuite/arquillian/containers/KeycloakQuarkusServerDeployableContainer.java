@@ -65,9 +65,12 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
                 if (!container.supportsNormalTermination()) {
                     throw new RuntimeException("Container does not support normal termination");
                 }
-                container.destroy();
-                new ProcessBuilder("kill", "-" + container.pid()).start();
+//                container.destroy();
+                log.info("Proceeding to kill Keycloak");
+                long startTime = System.currentTimeMillis();
+                new ProcessBuilder("kill", String.valueOf(container.pid())).start();
                 container.waitFor(10, TimeUnit.SECONDS);
+                log.info("Keycloak killed successfully in " + (System.currentTimeMillis() - startTime) + " ms");
             } catch (InterruptedException e) {
                 log.error("Interrupted while waiting for container to stop, destroying forcibly", e);
                 destroyDescendantsOnWindows(container, true);
