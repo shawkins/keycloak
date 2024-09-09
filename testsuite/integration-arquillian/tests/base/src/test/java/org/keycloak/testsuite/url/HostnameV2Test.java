@@ -37,6 +37,7 @@ import org.keycloak.testsuite.util.RealmBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -245,9 +246,13 @@ public class HostnameV2Test extends AbstractKeycloakTest {
         // need to start the server back again to perform standard after test cleanup
         resetHostnameSettings();
         try {
+            log.infof("Checking %s realm exists before restart, got realm ID", realmFrontendName, adminClient.realm(realmFrontendName).toRepresentation().getId());
+            log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
             container.stop(); // just to make sure all components are stopped (useful for Undertow)
             container.start();
             reconnectAdminClient();
+            //log.infof("Checking %s realm exists after restart, got realm ID", realmFrontendName, adminClient.realm(realmFrontendName).toRepresentation().getId());
+            log.info("Post-restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
