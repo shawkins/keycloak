@@ -66,11 +66,14 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
                     throw new RuntimeException("Container does not support normal termination");
                 }
                 container.destroy();
+                new ProcessBuilder("kill", "-" + container.pid()).start();
                 container.waitFor(10, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 log.error("Interrupted while waiting for container to stop, destroying forcibly", e);
                 destroyDescendantsOnWindows(container, true);
                 container.destroyForcibly();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -195,9 +198,9 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
     }
 
     private void destroyDescendantsOnWindows(Process parent, boolean force) {
-//        if (!isWindows()) {
-//            return;
-//        }
+        if (!isWindows()) {
+            return;
+        }
 
         // Wait some time before killing the windows processes. Otherwise there is a risk that some already commited H2 transactions
         // won't be written to disk in time and hence those transactions may be lost, which could result in test failures in the next step after server restart.
@@ -291,7 +294,7 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
                 }
             }
             catch (IOException e) {
-                throw new RuntimeException(e);
+                log.warn("Encountered error while reading server log", e);
             }
         }
 

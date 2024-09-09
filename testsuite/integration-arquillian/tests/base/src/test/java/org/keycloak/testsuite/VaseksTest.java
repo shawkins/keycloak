@@ -42,12 +42,9 @@ public class VaseksTest extends AbstractKeycloakTest {
             adminClient.realms().create(realm);
 
             log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
-            pause(2000);
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
-            pause(2000);
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
-            pause(2000);
             List<RealmRepresentation> realms = adminClient.realms().findAll();
             log.info("Post-restart realms: " + realms.stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             assertEquals(i + 2, realms.size());
