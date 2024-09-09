@@ -46,7 +46,7 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
     @Override
     public void start() throws LifecycleException {
         try {
-            importRealm();
+//            importRealm();
             container = startContainer();
             logProcessor = new LogProcessor(new BufferedReader(new InputStreamReader(container.getInputStream())));
             stdoutForwarderThread = new Thread(logProcessor);
@@ -65,12 +65,11 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
                 if (!container.supportsNormalTermination()) {
                     throw new RuntimeException("Container does not support normal termination");
                 }
-//                container.destroy();
                 log.info("Proceeding to kill Keycloak");
                 long startTime = System.currentTimeMillis();
-                new ProcessBuilder("kill", String.valueOf(container.pid())).start();
+                container.destroy();
                 container.waitFor(10, TimeUnit.SECONDS);
-                log.info("Keycloak killed successfully in " + (System.currentTimeMillis() - startTime) + " ms");
+                log.info("Keycloak killed successfully in " + (System.currentTimeMillis() - startTime) + " ms, exit code: " + container.exitValue());
             } catch (InterruptedException e) {
                 log.error("Interrupted while waiting for container to stop, destroying forcibly", e);
                 destroyDescendantsOnWindows(container, true);
