@@ -33,8 +33,8 @@ public class VaseksTest extends AbstractKeycloakTest {
     @Override
     public void addTestRealms(List<RealmRepresentation> testRealms) {}
 
-//    @Test
-    public void test() throws Exception {
+    @Test
+    public void test1() throws Exception {
         final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
@@ -50,7 +50,7 @@ public class VaseksTest extends AbstractKeycloakTest {
         }
     }
 
-    @Test
+//    @Test
     public void test2() throws Exception {
         final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {
