@@ -86,4 +86,4 @@ jobs:
 
       - name: Run base tests
         run: |
-          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=VaseksTest -pl testsuite/integration-arquillian/tests/base 2>&1
+          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=VaseksTest -Pdb-postgres -pl testsuite/integration-arquillian/tests/base 2>&1
