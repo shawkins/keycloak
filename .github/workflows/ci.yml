@@ -28,14 +28,53 @@ jobs:
       - name: Build Keycloak
         uses: ./.github/actions/build-keycloak
 
-  base-integration-tests:
-    name: Base IT
+#  base-integration-tests:
+#    name: Base IT
+#    needs: build
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 100
+#    strategy:
+#      matrix:
+#        group: [6]
+#        run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+#      fail-fast: false
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - id: integration-test-setup
+#        name: Integration test setup
+#        uses: ./.github/actions/integration-test-setup
+#
+#      - name: Run base tests
+#        run: |
+#          TESTS=`testsuite/integration-arquillian/tests/base/testsuites/base-suite.sh ${{ matrix.group }}`
+#          echo "Tests: $TESTS"
+#          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=$TESTS -pl testsuite/integration-arquillian/tests/base 2>&1 | misc/log/trimmer.sh
+#
+#      - name: Upload JVM Heapdumps
+#        if: always()
+#        uses: ./.github/actions/upload-heapdumps
+#
+#      - uses: ./.github/actions/upload-flaky-tests
+#        name: Upload flaky tests
+#        env:
+#          GH_TOKEN: ${{ github.token }}
+#        with:
+#          job-name: Base IT
+#
+#      - name: Surefire reports
+#        if: always()
+#        uses: ./.github/actions/archive-surefire-reports
+#        with:
+#          job-id: base-integration-tests-${{ matrix.group }}
+
+  vaseks-test:
+    name: Vasek's test
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
       matrix:
-        group: [6]
         run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       fail-fast: false
     steps:
@@ -47,23 +86,4 @@ jobs:
 
       - name: Run base tests
         run: |
-          TESTS=`testsuite/integration-arquillian/tests/base/testsuites/base-suite.sh ${{ matrix.group }}`
-          echo "Tests: $TESTS"
-          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=$TESTS -pl testsuite/integration-arquillian/tests/base 2>&1 | misc/log/trimmer.sh
-
-      - name: Upload JVM Heapdumps
-        if: always()
-        uses: ./.github/actions/upload-heapdumps
-
-      - uses: ./.github/actions/upload-flaky-tests
-        name: Upload flaky tests
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          job-name: Base IT
-
-      - name: Surefire reports
-        if: always()
-        uses: ./.github/actions/archive-surefire-reports
-        with:
-          job-id: base-integration-tests-${{ matrix.group }}
+          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=VaseksTest -pl testsuite/integration-arquillian/tests/base 2>&1
