@@ -157,6 +157,7 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
         }
 
         if (restart.compareAndSet(false, true)) {
+            log.info("Deleting data directory");
             deleteDirectory(configuration.getProvidersPath().resolve("data"));
         }
 
