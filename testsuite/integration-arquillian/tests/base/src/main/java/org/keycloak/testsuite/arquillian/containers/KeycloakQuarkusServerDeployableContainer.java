@@ -147,6 +147,7 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
         String javaOpts = configuration.getJavaOpts();
 
         if (javaOpts != null) {
+            log.info("Setting JAVA_OPTS: " + javaOpts);
             builder.environment().put("JAVA_OPTS", javaOpts);
         }
 
