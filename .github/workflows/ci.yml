@@ -86,4 +86,24 @@ jobs:
 
       - name: Run base tests
         run: |
-          ./mvnw test ${{ env.SUREFIRE_RETRY }} -Pauth-server-quarkus -Dtest=VaseksTest -Pdb-postgres -pl testsuite/integration-arquillian/tests/base 2>&1
+          ./mvnw test -Pauth-server-quarkus -Dtest=VaseksTest -pl testsuite/integration-arquillian/tests/base 2>&1
+
+  vaseks-test-postgres:
+    name: Vasek's test (postgres)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      matrix:
+        run: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: integration-test-setup
+        name: Integration test setup
+        uses: ./.github/actions/integration-test-setup
+
+      - name: Run base tests
+        run: |
+          ./mvnw test -Pauth-server-quarkus -Dtest=VaseksTest -Pdb-postgres -pl testsuite/integration-arquillian/tests/base 2>&1

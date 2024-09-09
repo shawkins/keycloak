@@ -35,7 +35,7 @@ public class VaseksTest extends AbstractKeycloakTest {
 
     @Test
     public void test() throws Exception {
-        final int realmCount = 20;
+        final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
             adminClient.realms().create(realm);
