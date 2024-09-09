@@ -169,8 +169,6 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
         commands.add(0, getCommand());
         commands.add("--optimized");
 
-        log.debugf("Quarkus parameters: %s", commands);
-
         return commands;
     }
 
