@@ -250,7 +250,7 @@ public class HostnameV2Test extends AbstractKeycloakTest {
             container.start();
             reconnectAdminClient();
             //log.infof("Checking %s realm exists after restart, got realm ID", realmFrontendName, adminClient.realm(realmFrontendName).toRepresentation().getId());
-            log.info("Post-failure restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
+            log.info("Post-failure restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -261,14 +261,14 @@ public class HostnameV2Test extends AbstractKeycloakTest {
 
     private void updateServerHostnameSettings(String hostname, String hostnameAdmin, Boolean hostnameBackchannelDynamic, Boolean hostnameStrict) {
         try {
-            log.infof("Checking %s realm exists before restart, got realm ID", realmFrontendName, adminClient.realm(realmFrontendName).toRepresentation().getId());
-            log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
+            log.infof("Checking %s realm exists before restart, got realm ID %s", realmFrontendName, adminClient.realm(realmFrontendName).toRepresentation().getId());
+            log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
             setHostnameOptions(hostname, hostnameAdmin, hostnameBackchannelDynamic, hostnameStrict);
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
             try {
-                log.info("Post-restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
+                log.info("Post-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             }
             catch (Exception e) {
                 log.error("Could not fetch post-restart realms, failed to reconnect admin client", e);
