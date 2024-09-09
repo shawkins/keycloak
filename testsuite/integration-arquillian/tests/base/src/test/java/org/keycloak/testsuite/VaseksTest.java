@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.keycloak.testsuite.util.WaitUtils.pause;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
@@ -42,8 +43,10 @@ public class VaseksTest extends AbstractKeycloakTest {
 
             log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
+            pause(2000);
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
+            pause(2000);
             List<RealmRepresentation> realms = adminClient.realms().findAll();
             log.info("Post-restart realms: " + realms.stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             assertEquals(i + 2, realms.size());
