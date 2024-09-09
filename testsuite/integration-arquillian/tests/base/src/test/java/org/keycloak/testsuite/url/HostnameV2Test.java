@@ -267,7 +267,12 @@ public class HostnameV2Test extends AbstractKeycloakTest {
             setHostnameOptions(hostname, hostnameAdmin, hostnameBackchannelDynamic, hostnameStrict);
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
-            log.info("Post-restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
+            try {
+                log.info("Post-restart realms: " + adminClient.realms().findAll().stream().map(RealmRepresentation::getRealm).collect(Collectors.joining(", ")));
+            }
+            catch (Exception e) {
+                log.error("Could not fetch post-restart realms, failed to reconnect admin client", e);
+            }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
