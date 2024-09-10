@@ -46,7 +46,7 @@ public class VaseksTest extends AbstractKeycloakTest {
 
             log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
-            pause(3000);
+//            pause(3000);
 
 //            Connection connection = DriverManager.getConnection("jdbc:h2:/Users/vmuzikar/Documents/keycloak/testsuite/integration-arquillian/tests/base/target/containers/auth-server-quarkus/data/h2/keycloakdb", "sa", "password");
 //            ResultSet resultSet = connection.createStatement().executeQuery("SELECT COUNT(*) as count FROM REALM");
