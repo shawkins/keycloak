@@ -172,7 +172,7 @@ public class KeycloakController implements Reconciler<Keycloak>, EventSourceInit
 
         kc.setStatus(status);
 
-        return ErrorStatusUpdateControl.updateStatus(kc);
+        return ErrorStatusUpdateControl.updateStatus(kc).rescheduleAfter(Constants.RETRY_DURATION);
     }
 
     public static Optional<String> generateOpenshiftHostname(Keycloak keycloak, Context<Keycloak> context) {

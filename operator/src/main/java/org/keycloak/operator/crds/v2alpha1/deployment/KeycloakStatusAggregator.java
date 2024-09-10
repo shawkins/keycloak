@@ -18,6 +18,7 @@
 package org.keycloak.operator.crds.v2alpha1.deployment;
 
 import org.keycloak.operator.Utils;
+import org.keycloak.operator.crds.v2alpha1.StatusCondition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,9 +57,9 @@ public class KeycloakStatusAggregator {
      * @param generation the observedGeneration for conditions
      */
     public KeycloakStatusAggregator(KeycloakStatus current, Long generation) {
-        if (current != null) { // 6.7 fabric8 no longer requires this null check
+        if (current != null) {
             statusBuilder = new KeycloakStatusBuilder(current);
-            existingConditions = Optional.ofNullable(current.getConditions()).orElse(List.of()).stream().collect(Collectors.toMap(KeycloakStatusCondition::getType, Function.identity()));
+            existingConditions = getConditionMap(current.getConditions());
         } else {
             statusBuilder = new KeycloakStatusBuilder();
             existingConditions = Map.of();
@@ -72,6 +73,10 @@ public class KeycloakStatusAggregator {
         hasErrorsCondition.setType(KeycloakStatusCondition.HAS_ERRORS);
 
         rollingUpdate.setType(KeycloakStatusCondition.ROLLING_UPDATE);
+    }
+
+    public static <T extends StatusCondition> Map<String, T> getConditionMap(List<T> conditions) {
+        return Optional.ofNullable(conditions).orElse(List.of()).stream().collect(Collectors.toMap(StatusCondition::getType, Function.identity()));
     }
 
     public KeycloakStatusAggregator addNotReadyMessage(String message) {
@@ -147,7 +152,7 @@ public class KeycloakStatusAggregator {
         return statusBuilder.withConditions(List.of(readyCondition, hasErrorsCondition, rollingUpdate)).build();
     }
 
-    static void updateConditionFromExisting(KeycloakStatusCondition condition, Map<String, KeycloakStatusCondition> existingConditions, String now) {
+    public static void updateConditionFromExisting(StatusCondition condition, Map<String, ? extends StatusCondition> existingConditions, String now) {
         var existing = existingConditions.get(condition.getType());
         if (existing == null) {
             if (condition.getObservedGeneration() != null) {

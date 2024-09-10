@@ -18,6 +18,7 @@ package org.keycloak.operator;
 
 import org.keycloak.operator.crds.v2alpha1.deployment.ValueOrSecret;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ public final class Constants {
     public static final String KEYCLOAK_MIGRATING_ANNOTATION = "operator.keycloak.org/migrating";
 
     public static final String DEFAULT_LABELS_AS_STRING = "app=keycloak,app.kubernetes.io/managed-by=keycloak-operator";
+    
+    public static final String AUTHORIZATION_HEADER = "Authorization";
 
     public static final Map<String, String> DEFAULT_LABELS = Collections
             .unmodifiableMap(Stream.of(DEFAULT_LABELS_AS_STRING.split(",")).map(s -> s.split("="))
@@ -74,4 +77,6 @@ public final class Constants {
 
     public static final String KEYCLOAK_HTTP_RELATIVE_PATH_KEY = "http-relative-path";
     public static final String KEYCLOAK_HTTP_MANAGEMENT_RELATIVE_PATH_KEY = "http-management-relative-path";
+    
+    public static final Duration RETRY_DURATION = Duration.ofSeconds(10);
 }
