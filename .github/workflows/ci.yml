@@ -89,10 +89,11 @@ jobs:
           ./mvnw test -Pauth-server-quarkus -Dtest=VaseksTest -pl testsuite/integration-arquillian/tests/base 2>&1
 
       - name: Upload traces
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: h2-traces
-          path: ${{ github.workspace }}/**/keycloakdb.trace.db
+          path: ${{ github.workspace }}/**/keycloakdb.trace.db*
 
 #  vaseks-test-postgres:
 #    name: Vasek's test (postgres)
