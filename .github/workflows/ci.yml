@@ -112,4 +112,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: h2-traces
-          path: **/keycloakdb.trace.db
+          path: ${{ github.workspace }}/**/keycloakdb.trace.db
