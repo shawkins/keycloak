@@ -92,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: h2-traces
+          name: h2-traces-${{ matrix.run }}
           path: ${{ github.workspace }}/**/keycloakdb.trace.db*
 
 #  vaseks-test-postgres:
