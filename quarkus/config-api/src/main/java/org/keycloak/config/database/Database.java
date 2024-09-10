@@ -123,7 +123,7 @@ public final class Database {
                         if ("dev-file".equalsIgnoreCase(alias)) {
                             return addH2NonKeywords("jdbc:h2:file:${kc.home.dir:${kc.db-url-path:" + escapeReplacements(System.getProperty("user.home")) + "}}" + escapeReplacements(File.separator) + "${kc.data.dir:data}"
                                     + escapeReplacements(File.separator) + "h2" + escapeReplacements(File.separator)
-                                    + "keycloakdb${kc.db-url-properties:};;TRACE_LEVEL_FILE=3;;ACCESS_MODE_DATA=rws");
+                                    + "keycloakdb${kc.db-url-properties:};;TRACE_LEVEL_FILE=3;;AUTO_SERVER=TRUE");
                         }
                         return addH2NonKeywords("jdbc:h2:mem:keycloakdb${kc.db-url-properties:}");
                     }
