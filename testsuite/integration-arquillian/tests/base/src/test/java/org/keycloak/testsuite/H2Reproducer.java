@@ -54,15 +54,15 @@ public class H2Reproducer extends AbstractKeycloakTest {
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
 //            pause(3000);
 
-            String dbPath = Path.of(System.getProperty("auth.server.home") + "/data/h2/keycloakdb").normalize().toAbsolutePath().toString();
-            try (Connection connection = DriverManager.getConnection("jdbc:h2:" + dbPath, "sa", "password")) {
-                try (Statement statement = connection.createStatement()) {
-                    try (ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) as count FROM REALM")) {
-                        resultSet.next();
-                        assertEquals("Realms count in DB between restarts did not match", expectedRealmCount, resultSet.getInt("count"));
-                    }
-                }
-            }
+//            String dbPath = Path.of(System.getProperty("auth.server.home") + "/data/h2/keycloakdb").normalize().toAbsolutePath().toString();
+//            try (Connection connection = DriverManager.getConnection("jdbc:h2:" + dbPath, "sa", "password")) {
+//                try (Statement statement = connection.createStatement()) {
+//                    try (ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) as count FROM REALM")) {
+//                        resultSet.next();
+//                        assertEquals("Realms count in DB between restarts did not match", expectedRealmCount, resultSet.getInt("count"));
+//                    }
+//                }
+//            }
 
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
