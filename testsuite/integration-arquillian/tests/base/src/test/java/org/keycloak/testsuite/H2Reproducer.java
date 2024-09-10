@@ -21,9 +21,11 @@ import org.junit.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.testsuite.util.RealmBuilder;
 
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,14 +35,18 @@ import static org.keycloak.testsuite.util.WaitUtils.pause;
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class VaseksTest extends AbstractKeycloakTest {
+public class H2Reproducer extends AbstractKeycloakTest {
     @Override
     public void addTestRealms(List<RealmRepresentation> testRealms) {}
 
     @Test
     public void test1() throws Exception {
+        int startingRealmCount = adminClient.realms().findAll().size();
+
         final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {
+            int expectedRealmCount = i + startingRealmCount + 1;
+
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
             adminClient.realms().create(realm);
 
@@ -48,22 +54,26 @@ public class VaseksTest extends AbstractKeycloakTest {
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
 //            pause(3000);
 
-//            Connection connection = DriverManager.getConnection("jdbc:h2:/Users/vmuzikar/Documents/keycloak/testsuite/integration-arquillian/tests/base/target/containers/auth-server-quarkus/data/h2/keycloakdb", "sa", "password");
-//            ResultSet resultSet = connection.createStatement().executeQuery("SELECT COUNT(*) as count FROM REALM");
-//            resultSet.next();
-//            log.info("------- Realms in DB between restarts: " + resultSet.getInt("count"));
-//            resultSet.close();
-//            connection.close();
+            String dbPath = Path.of(System.getProperty("auth.server.home") + "/data/h2/keycloakdb").normalize().toAbsolutePath().toString();
+            try (Connection connection = DriverManager.getConnection("jdbc:h2:" + dbPath, "sa", "password")) {
+                try (Statement statement = connection.createStatement()) {
+                    try (ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) as count FROM REALM")) {
+                        resultSet.next();
+                        assertEquals("Realms count in DB between restarts did not match", expectedRealmCount, resultSet.getInt("count"));
+                    }
+                }
+            }
 
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
             List<RealmRepresentation> realms = adminClient.realms().findAll();
             log.info("Post-restart realms: " + realms.stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
-            assertEquals(i + 2, realms.size());
+            assertEquals("Realms count after restart did not match", expectedRealmCount, realms.size());
         }
     }
 
-//    @Test
+    // @Test
+    // Does not reproduce the issue
     public void test2() throws Exception {
         final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {

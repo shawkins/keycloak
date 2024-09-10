@@ -68,8 +68,8 @@ jobs:
 #        with:
 #          job-id: base-integration-tests-${{ matrix.group }}
 
-  vaseks-test:
-    name: Vasek's test
+  h2-reproducer:
+    name: h2-reproducer
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 100
@@ -86,7 +86,7 @@ jobs:
 
       - name: Run base tests
         run: |
-          ./mvnw test -Pauth-server-quarkus -Dtest=VaseksTest -pl testsuite/integration-arquillian/tests/base 2>&1
+          ./mvnw test -Pauth-server-quarkus -Dtest=H2Reproducer -pl testsuite/integration-arquillian/tests/base 2>&1
 
       - name: Upload traces
         if: always()
@@ -95,8 +95,8 @@ jobs:
           name: h2-traces-${{ matrix.run }}
           path: ${{ github.workspace }}/**/keycloakdb.trace.db*
 
-#  vaseks-test-postgres:
-#    name: Vasek's test (postgres)
+#  h2-reproducer-postgres:
+#    name: h2-reproducer (postgres)
 #    needs: build
 #    runs-on: ubuntu-latest
 #    timeout-minutes: 100
@@ -113,4 +113,4 @@ jobs:
 #
 #      - name: Run base tests
 #        run: |
-#          ./mvnw test -Pauth-server-quarkus -Dtest=VaseksTest -Pdb-postgres -pl testsuite/integration-arquillian/tests/base 2>&1
+#          ./mvnw test -Pauth-server-quarkus -Dtest=H2Reproducer -Pdb-postgres -pl testsuite/integration-arquillian/tests/base 2>&1
