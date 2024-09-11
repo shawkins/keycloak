@@ -108,10 +108,7 @@ public class ResourceEntity {
     @BatchSize(size = 20)
     private List<ScopeEntity> scopes;
 
-    // Explicitly not using OrphanRemoval as we're handling the removal manually through HQL but at the same time we still
-    // want to remove elements from the entity's collection in a manual way. Without this, Hibernate would do a duplicit
-    // delete query.
-    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = false, mappedBy="resource", fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="resource", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     private Collection<ResourceAttributeEntity> attributes = new LinkedList<>();

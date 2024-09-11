@@ -37,8 +37,7 @@ public class KeycloakReadyHealthCheckTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("keycloak.conf", "META-INF/keycloak.conf"))
-            .overrideConfigKey("quarkus.class-loading.removed-artifacts", "io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-oracle-deployment"); // config works a bit odd in unit tests, so this is to ensure we exclude Oracle to avoid ClassNotFound ex
+                    .addAsResource("keycloak.conf", "META-INF/keycloak.conf"));
 
     @Test
     public void testLivenessUp() {
