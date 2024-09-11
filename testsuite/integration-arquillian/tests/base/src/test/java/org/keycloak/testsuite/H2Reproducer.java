@@ -45,12 +45,10 @@ public class H2Reproducer extends AbstractKeycloakTest {
 
         final int realmCount = 50;
         for (int i = 0; i < realmCount; i++) {
-            int expectedRealmCount = i + startingRealmCount + 1;
-
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
             adminClient.realms().create(realm);
 
-            log.info("Pre-restart realms: " + adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
+            var preRealms = adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.toSet());
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
 //            pause(3000);
 
@@ -66,9 +64,10 @@ public class H2Reproducer extends AbstractKeycloakTest {
 
             suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
             reconnectAdminClient();
-            List<RealmRepresentation> realms = adminClient.realms().findAll();
-            log.info("Post-restart realms: " + realms.stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.joining(", ")));
-            assertEquals("Realms count after restart did not match", expectedRealmCount, realms.size());
+            var postRealms = adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.toSet());
+            log.info("Post-restart realms: " + postRealms);
+            assertEquals("Realms did not match", preRealms, postRealms);
+            assertEquals("Realms count wrong", startingRealmCount + i + 1, postRealms.size());
         }
     }
 

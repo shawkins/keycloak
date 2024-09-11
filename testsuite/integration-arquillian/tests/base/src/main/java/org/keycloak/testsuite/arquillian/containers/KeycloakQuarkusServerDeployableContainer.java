@@ -169,6 +169,16 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
             log.info("Deleting data directory");
             deleteDirectory(configuration.getProvidersPath().resolve("data"));
         }
+        
+        // DEBUGGING PROPERTIES FOR H2 issue
+        Path quarkusProperties = Paths.get(wrkDir.toURI()).getParent().resolve("conf").resolve("quarkus.properties");
+        try ( BufferedWriter w = new BufferedWriter(new FileWriter(quarkusProperties.toFile(), true))) {
+            for (String s : Arrays.asList("quarkus.hibernate-orm.\"keycloak-default\".log.sql=true",
+                    "quarkus.log.category.\"org.hibernate\".level=DEBUG")) {
+                w.write(System.lineSeparator());
+                w.write(s);
+            }
+        }
 
         return builder.start();
     }
