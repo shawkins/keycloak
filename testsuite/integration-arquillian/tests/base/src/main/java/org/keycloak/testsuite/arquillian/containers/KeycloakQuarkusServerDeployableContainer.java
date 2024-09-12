@@ -174,7 +174,9 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
         Path quarkusProperties = Paths.get(wrkDir.toURI()).getParent().resolve("conf").resolve("quarkus.properties");
         try ( BufferedWriter w = new BufferedWriter(new FileWriter(quarkusProperties.toFile(), true))) {
             for (String s : Arrays.asList("quarkus.hibernate-orm.\"keycloak-default\".log.sql=true",
-                    "quarkus.log.category.\"org.hibernate\".level=DEBUG")) {
+                    "quarkus.log.category.\"org.hibernate\".level=DEBUG",
+                    "quarkus.log.category.\"org.hibernate.internal.util.EntityPrinter\".level=INFO",
+                    "quarkus.log.category.\"org.hibernate.engine.internal.Collections\".level=INFO")) {
                 w.write(System.lineSeparator());
                 w.write(s);
             }

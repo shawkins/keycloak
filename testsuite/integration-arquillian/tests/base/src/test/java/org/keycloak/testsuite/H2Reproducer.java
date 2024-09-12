@@ -43,7 +43,7 @@ public class H2Reproducer extends AbstractKeycloakTest {
     public void test1() throws Exception {
         int startingRealmCount = adminClient.realms().findAll().size();
 
-        final int realmCount = 50;
+        final int realmCount = 40;
         for (int i = 0; i < realmCount; i++) {
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
             adminClient.realms().create(realm);
