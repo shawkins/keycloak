@@ -44,6 +44,7 @@ public class H2Reproducer extends AbstractKeycloakTest {
         int startingRealmCount = adminClient.realms().findAll().size();
 
         final int realmCount = 40;
+        boolean errored = false;
         for (int i = 0; i < realmCount; i++) {
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
             adminClient.realms().create(realm);
@@ -66,8 +67,13 @@ public class H2Reproducer extends AbstractKeycloakTest {
             reconnectAdminClient();
             var postRealms = adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.toSet());
             log.info("Post-restart realms: " + postRealms);
-            assertEquals("Realms did not match", preRealms, postRealms);
-            assertEquals("Realms count wrong", startingRealmCount + i + 1, postRealms.size());
+            if (!preRealms.equals(postRealms) || (startingRealmCount + i + 1) != postRealms.size()) {
+                if (errored) {
+                    throw new AssertionError("Realms do not match " + preRealms + " " + postRealms);
+                }
+                System.out.println("Realms do not match " + preRealms + " " + postRealms);
+                errored = true;
+            }
         }
     }
 
