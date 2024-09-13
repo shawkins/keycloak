@@ -262,7 +262,7 @@ public final class KeycloakModelUtils {
         runJobInTransactionWithResult(factory, null, session -> {
             task.run(session);
             return null;
-        }, task.useExistingSession());
+        });
     }
 
     /**
@@ -275,7 +275,7 @@ public final class KeycloakModelUtils {
         runJobInTransactionWithResult(factory, context, session -> {
             task.run(session);
             return null;
-        }, task.useExistingSession());
+        });
     }
 
     /**
@@ -365,7 +365,7 @@ public final class KeycloakModelUtils {
      * @return The return value from the callable
      */
     public static <V> V runJobInTransactionWithResult(KeycloakSessionFactory factory, final KeycloakSessionTaskWithResult<V> callable) {
-        return runJobInTransactionWithResult(factory, null, callable, false);
+        return runJobInTransactionWithResult(factory, null, callable);
     }
 
     /**
@@ -374,13 +374,12 @@ public final class KeycloakModelUtils {
      * @param factory The session factory
      * @param context The context from the previous session to use
      * @param callable The callable to execute
-     * @param useCurrentSession if the current session should be used
      * @return The return value from the callable
      */
-    public static <V> V runJobInTransactionWithResult(KeycloakSessionFactory factory, KeycloakContext context, final KeycloakSessionTaskWithResult<V> callable, boolean useCurrentSession) {
+    public static <V> V runJobInTransactionWithResult(KeycloakSessionFactory factory, KeycloakContext context, final KeycloakSessionTaskWithResult<V> callable) {
         V result;
         KeycloakSession old = KeycloakSessionUtil.getKeycloakSession();
-        if (useCurrentSession && old != null) {
+        if (old != null && old.getTransactionManager().isActive()) {
             return callable.run(old);
         }
         
