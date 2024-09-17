@@ -43,14 +43,14 @@ public class H2Reproducer extends AbstractKeycloakTest {
     public void test1() throws Exception {
         int startingRealmCount = adminClient.realms().findAll().size();
 
-        final int realmCount = 1;
+        final int realmCount = 50;
         boolean errored = false;
         for (int i = 0; i < realmCount; i++) {
             RealmRepresentation realm = RealmBuilder.create().name("realm-" + i).build();
             adminClient.realms().create(realm);
 
             var preRealms = adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.toSet());
-            suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
+            //suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().stop();
 //            pause(3000);
 
 //            String dbPath = Path.of(System.getProperty("auth.server.home") + "/data/h2/keycloakdb").normalize().toAbsolutePath().toString();
@@ -63,8 +63,8 @@ public class H2Reproducer extends AbstractKeycloakTest {
 //                }
 //            }
 
-            suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
-            reconnectAdminClient();
+            //suiteContext.getAuthServerInfo().getArquillianContainer().getDeployableContainer().start();
+            //reconnectAdminClient();
             var postRealms = adminClient.realms().findAll().stream().map(r -> r.getId() + ":" + r.getRealm()).collect(Collectors.toSet());
             log.info("Post realms: " + postRealms);
             if (!preRealms.equals(postRealms) || (startingRealmCount + i + 1) != postRealms.size()) {
