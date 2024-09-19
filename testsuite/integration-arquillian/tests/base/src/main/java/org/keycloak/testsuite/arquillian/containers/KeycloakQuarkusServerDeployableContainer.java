@@ -1,18 +1,15 @@
 package org.keycloak.testsuite.arquillian.containers;
 
-import org.jboss.arquillian.container.spi.client.container.LifecycleException;
-import org.jboss.logging.Logger;
-import org.keycloak.testsuite.model.StoreProvider;
-import org.keycloak.testsuite.util.WaitUtils;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -29,6 +26,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.jboss.arquillian.container.spi.client.container.LifecycleException;
+import org.jboss.logging.Logger;
+import org.keycloak.testsuite.model.StoreProvider;
+import org.keycloak.testsuite.util.WaitUtils;
 
 /**
  * @author mhajas
@@ -169,6 +171,10 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
             log.info("Deleting data directory");
             deleteDirectory(configuration.getProvidersPath().resolve("data"));
         }
+        
+        Path h2jar = Paths.get(wrkDir.toURI()).getParent().resolve("providers").resolve("h2-2.3.232-SNAPSHOT.jar");
+        InputStream is = KeycloakQuarkusServerDeployableContainer.class.getResourceAsStream("/h2-2.3.override");
+        Files.copy(is, h2jar, StandardCopyOption.REPLACE_EXISTING);
         
         // DEBUGGING PROPERTIES FOR H2 issue
         /*Path quarkusProperties = Paths.get(wrkDir.toURI()).getParent().resolve("conf").resolve("quarkus.properties");
