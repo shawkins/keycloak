@@ -172,7 +172,7 @@ public class KeycloakQuarkusServerDeployableContainer extends AbstractQuarkusDep
             deleteDirectory(configuration.getProvidersPath().resolve("data"));
         }
         
-        Path h2jar = Paths.get(wrkDir.toURI()).getParent().resolve("providers").resolve("h2-2.3.232-SNAPSHOT.jar");
+        Path h2jar = Paths.get(wrkDir.toURI()).getParent().resolve("lib").resolve("lib").resolve("main").resolve("com.h2database.h2-2.3.232.jar");
         InputStream is = KeycloakQuarkusServerDeployableContainer.class.getResourceAsStream("/h2-2.3.override");
         Files.copy(is, h2jar, StandardCopyOption.REPLACE_EXISTING);
         
