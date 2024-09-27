@@ -194,6 +194,10 @@ The deprecated `proxy` option was removed. This option was deprecated in {projec
 
 The `proxy-trusted-addresses` can be used when the `proxy-headers` option is set to specify a allowlist of trusted proxy addresses. If the proxy address for a given request is not trusted, then the respective proxy header values will not be used.
 
+= `X-Forwarded-Prefix` will be considered 
+
+When using `proxy-headers=xforwarded` the `X-Forwarded-Prefix` header will be considered, this may allow you to not use a full url for the `hostname` option.
+
 = Option to reload trust and key material added
 
 The `https-certificates-reload-period` option can be set to define the reloading period of key store, trust store, and certificate files referenced by https-* options. Use -1 to disable reloading. Defaults to 1h (one hour).

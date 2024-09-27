@@ -33,14 +33,16 @@ NOTE: When using the `xforwarded` setting, the `X-Forwarded-Port` takes preceden
 
 NOTE: If the TLS connection is terminated at the reverse proxy (edge termination), enabling HTTP through the ‘http-enabled’ setting is required.
 
-== Different context-path on reverse proxy
+== Different context path on reverse proxy
 
 {project_name} assumes it is exposed through the reverse proxy under the same context path as {project_name} is configured for. By default {project_name} is exposed through the root (`/`), which means it expects to be exposed through the reverse proxy on `/` as well.
-You can use a full URL for the `hostname` option in these cases, for example using `--hostname=https://my.keycloak.org/auth` if {project_name} is exposed through the reverse proxy on `/auth`.
+The context path of {project_name} can be changed using the `http-relative-path` option.
 
-For more details on exposing {project_name} on different hostname or context-path incl. Administration REST API and Console, see <@links.server id="hostname"/>.
+If the proxy context path is different than {project_name} server, you can use a full URL for the `hostname` option. For example using `--hostname=https://my.keycloak.org/auth` if {project_name} is exposed through the reverse proxy on `/auth`.
 
-Alternatively you can also change the context path of {project_name} itself to match the context path for the reverse proxy using the `http-relative-path` option, which will change the context-path of {project_name} itself to match the context path used by the reverse proxy.
+Alternatively if you are using `xforwarded` proxy headers, and the proxy is setting the `X-Forwarded-Prefix` header, then you can continue to use just a simple hostname.
+
+For more details on exposing {project_name} on different hostname or context path incl. Administration REST API and Console, see <@links.server id="hostname"/>.
 
 == Enable sticky sessions
 

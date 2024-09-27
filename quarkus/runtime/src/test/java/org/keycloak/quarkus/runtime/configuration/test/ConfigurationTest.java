@@ -153,7 +153,9 @@ public class ConfigurationTest extends AbstractConfigurationTest {
         ConfigArgsConfigSource.setCliArgs("");
         assertEquals("false", createConfig().getConfigValue("kc.proxy-allow-forwarded-header").getValue());
         ConfigArgsConfigSource.setCliArgs("--proxy-headers=xforwarded");
-        assertEquals("false", createConfig().getConfigValue("kc.proxy-allow-forwarded-header").getValue());
+        SmallRyeConfig config = createConfig();
+        assertEquals("false", config.getConfigValue("kc.proxy-allow-forwarded-header").getValue());
+        assertEquals("true", config.getConfigValue("quarkus.http.proxy.enable-forwarded-prefix").getValue());
         ConfigArgsConfigSource.setCliArgs("--proxy-headers=forwarded");
         assertEquals("true", createConfig().getConfigValue("kc.proxy-allow-forwarded-header").getValue());
     }
