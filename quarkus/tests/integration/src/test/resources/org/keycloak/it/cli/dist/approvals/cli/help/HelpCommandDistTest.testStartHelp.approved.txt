@@ -160,9 +160,13 @@ Hostname v2:
 HTTP(S):
 
 --http-enabled <true|false>
-                     Enables the HTTP listener. Enabled by default in development mode. Typically
-                       not enabled in production unless the server is fronted by a TLS termination
-                       proxy. Default: false.
+                     Enables the HTTP listener. Enabled by default in development mode, and
+                       disabled by default in production unless the server is fronted by a
+                       TLS termination proxy. Even in that case, enabling it exposes Keycloak
+                       to internal network threats, so consider using HTTPS regardless of the
+                       TLS edge termination, as you can never be too careful, especially
+                       considering that Keycloak is one of, if not the most, critical security
+                       component in your infrastructure. Default: false.
 --http-host <host>   The HTTP Host. Default: 0.0.0.0.
 --http-max-queued-requests <requests>
                      Maximum number of queued HTTP requests. Use this to shed load in an overload
