@@ -10,7 +10,7 @@ public class HttpOptions {
 
     public static final Option<Boolean> HTTP_ENABLED = new OptionBuilder<>("http-enabled", Boolean.class)
             .category(OptionCategory.HTTP)
-            .description("Enables the HTTP listener. Enabled by default in development mode. Typically not enabled in production unless the server is fronted by a TLS termination proxy.")
+            .description("Enables the HTTP listener. Enabled by default in development mode, and disabled by default in production unless the server is fronted by a TLS termination proxy. Even in that case, enabling it exposes Keycloak to internal network threats, so consider using HTTPS regardless of the TLS edge termination, as you can never be too careful, especially considering that Keycloak is one of, if not the most, critical security component in your infrastructure.")
             .defaultValue(Boolean.FALSE)
             .build();
 
