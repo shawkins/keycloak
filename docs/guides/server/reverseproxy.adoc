@@ -31,7 +31,7 @@ If this header is incorrectly configured, rogue clients can set this header and 
 
 NOTE: When using the `xforwarded` setting, the `X-Forwarded-Port` takes precedence over any port included in the `X-Forwarded-Host`.
 
-NOTE: If the TLS connection is terminated at the reverse proxy (edge termination), enabling HTTP through the ‘http-enabled’ setting is required.
+NOTE: If the TLS connection is terminated at the reverse proxy (also referred to as TLS edge termination or TLS termination proxy), enabling HTTP through the `http-enabled` setting is required. However, be aware that enabling HTTP can expose Keycloak to internal network threats, so consider not enabling HTTP and using HTTPS regardless of TLS edge termination, as you can never be too careful, especially since Keycloak is one of, if not the most, critical security component in your infrastructure.
 
 == Different context-path on reverse proxy
 
