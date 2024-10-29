@@ -189,9 +189,8 @@ public class QuarkusPropertiesDistTest {
             "--https-certificate-file=C:\\tmp\\kc\\bin\\..\\conf/server.crt.pem",
             "--https-certificate-key-file=C:\\tmp\\kc\\bin\\..\\conf/server.key.pem" })
     @Order(14)
-    void testHttpCertsPathTransformerOnWindows(LaunchResult result) {
-        CLIResult cliResult = (CLIResult) result;
-        assertThat(cliResult.getErrorOutput(),containsString("Failed to load 'https-key-' material: NoSuchFileException C:/tmp/kc/bin/../conf/server.crt.pem"));
+    void testHttpCertsPathTransformerOnWindows(CLIResult cliResult) {
+        cliResult.assertError("Failed to load 'https-key-' material: NoSuchFileException C:\\tmp\\kc\\bin\\..\\conf\\server.crt.pem");
     }
 
     public static class AddConsoleHandlerFromQuarkusProps implements Consumer<KeycloakDistribution> {
