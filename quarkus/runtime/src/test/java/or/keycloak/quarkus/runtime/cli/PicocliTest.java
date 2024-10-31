@@ -22,14 +22,21 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.OPTIMIZED_BUILD_OPTION_LONG;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
+import org.keycloak.quarkus.runtime.Environment;
+import org.keycloak.quarkus.runtime.KeycloakMain;
+import org.keycloak.quarkus.runtime.cli.ExecutionExceptionHandler;
 import org.keycloak.quarkus.runtime.cli.Picocli;
 import org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource;
+import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.test.AbstractConfigurationTest;
 
 import io.smallrye.config.SmallRyeConfig;
@@ -62,17 +69,17 @@ public class PicocliTest extends AbstractConfigurationTest {
         }
 
         @Override
-        protected PrintWriter getErrWriter() {
+        public PrintWriter getErrWriter() {
             return new PrintWriter(err, true);
         }
         
         @Override
-        protected PrintWriter getOutWriter() {
+        public PrintWriter getOutWriter() {
             return new PrintWriter(out, true);
         }
 
         @Override
-        protected void exitOnFailure(int exitCode, CommandLine cmd) {
+        public void exitOnFailure(int exitCode, CommandLine cmd) {
             this.exitCode = exitCode;
         }
 
@@ -81,13 +88,7 @@ public class PicocliTest extends AbstractConfigurationTest {
         };
 
         @Override
-        public void parseAndRun(List<String> cliArgs) {
-            config = createConfig();
-            super.parseAndRun(cliArgs);
-        }
-        
-        @Override
-        public void start(CommandLine cmd) {
+        public void start(ExecutionExceptionHandler errorHandler, PrintWriter errStream, String[] args) {
             // skip
         }
         
@@ -95,14 +96,14 @@ public class PicocliTest extends AbstractConfigurationTest {
         public void build() throws Throwable {
             // skip
         }
-
+        
     };
 
     NonRunningPicocli pseudoLaunch(String... args) {
         NonRunningPicocli nonRunningPicocli = new NonRunningPicocli();
         ConfigArgsConfigSource.setCliArgs(args);
-        var cliArgs = Picocli.parseArgs(args);
-        nonRunningPicocli.parseAndRun(cliArgs);
+        nonRunningPicocli.config = createConfig();
+        KeycloakMain.main(args, nonRunningPicocli);
         return nonRunningPicocli;
     }
 
@@ -244,4 +245,85 @@ public class PicocliTest extends AbstractConfigurationTest {
         assertThat(nonRunningPicocli.getOutString(), containsString("The following run time options were found, but will be ignored during build time: kc.spi-something-pass"));
     }
     
+    @Test
+    public void failIfOptimizedUsedForFirstStartupExport() {
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("export", "--optimized", "--dir=data");
+        assertEquals(CommandLine.ExitCode.USAGE, nonRunningPicocli.exitCode);
+        assertThat(nonRunningPicocli.getErrString(), containsString("The '--optimized' flag was used for first ever server start."));
+    }
+    
+    @Test
+    public void testOptimizedReaugmentationMessage() {
+        // setup the conditions to be a reaug
+        Environment.setRebuildCheck(); // we be reset by the system properties logic
+        addPersistedConfigValues(Map.of(Configuration.KC_OPTIMIZED, "true", "kc.db", "dev-file"));
+        
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("start", "--features=docker", "--hostname=name", "--http-enabled=true");
+        assertEquals(CommandLine.ExitCode.OK, nonRunningPicocli.exitCode);
+        assertThat(nonRunningPicocli.getOutString(), containsString("features=<unset> > features=docker"));
+    }
+        
+    @Test
+    public void failNoTls() {
+        NonRunningPicocli result = pseudoLaunch("start", "--hostname-strict=false");
+        assertTrue("The Output:\n" + result.getErrString() + "doesn't contains the expected string.",
+                result.getErrString().contains("Key material not provided to setup HTTPS"));
+    }
+
+    @Test
+    public void failSpiArgMissingValue() {
+        NonRunningPicocli result = pseudoLaunch("start", "--spi-events-listener-jboss-logging-success-level");
+        assertTrue("The Output:\n" + result.getErrString() + "doesn't contains the expected string.",
+                result.getErrString().contains("spi argument --spi-events-listener-jboss-logging-success-level requires a value"));
+    }
+    
+    @Test
+    public void warnSpiRuntimeAtBuildtime() {
+        NonRunningPicocli result = pseudoLaunch("build", "--spi-events-listener-jboss-logging-success-level=debug");
+        assertTrue("The Output:\n" + result.getOutString() + "doesn't contains the expected string.",
+                result.getOutString().contains("The following run time options were found, but will be ignored during build time: kc.spi-events-listener-jboss-logging-success-level"));
+    }
+    
+    @Test
+    public void errorSpiBuildtimeAtRuntime() {
+        addPersistedConfigValues(Map.of(Configuration.KC_OPTIMIZED, "true", "kc.spi.events.listener.jboss.logging.enabled", "true"));
+        
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("start", "--optimized", "--http-enabled=true", "--hostname-strict=false", "--spi-events-listener-jboss-logging-enabled=false");
+        assertTrue(nonRunningPicocli.getErrString().contains("The following build time options have values that differ from what is persisted - the new values will NOT be used until another build is run: kc.spi-events-listener-jboss-logging-enabled"));
+        assertEquals(CommandLine.ExitCode.USAGE, nonRunningPicocli.exitCode);
+    }
+    
+    @Test
+    public void noErrorSpiBuildtimeNotChanged() {
+        addPersistedConfigValues(Map.of(Configuration.KC_OPTIMIZED, "true", "kc.spi.events.listener.jboss.logging.enabled", "false"));
+
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("start", "--optimized", "--http-enabled=true", "--hostname-strict=false", "--spi-events-listener-jboss-logging-enabled=false");
+        assertEquals(CommandLine.ExitCode.OK, nonRunningPicocli.exitCode);
+    }
+    
+    @Test
+    public void failUsingDevProfile() {
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("--profile=dev", "start");
+        assertTrue("The Output:\n" + nonRunningPicocli.getErrString() + "doesn't contains the expected string.", nonRunningPicocli.getErrString().contains("ERROR: You can not 'start' the server in development mode. Please re-build the server first, using 'kc.sh build' for the default production mode."));
+    }
+    
+    @Test
+    public void failUsingDevProfileOptimized() {
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("--profile=dev", "start", OPTIMIZED_BUILD_OPTION_LONG);
+        assertTrue("The Output:\n" + nonRunningPicocli.getErrString() + "doesn't contains the expected string.", nonRunningPicocli.getErrString().contains("ERROR: You can not 'start' the server in development mode. Please re-build the server first, using 'kc.sh build' for the default production mode."));
+    }
+
+    @Test
+    public void failBuildPropertyNotAvailable() {
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("-v", "start", "--db=dev-mem", OPTIMIZED_BUILD_OPTION_LONG);
+        assertTrue("The Output:\n" + nonRunningPicocli.getErrString() + "doesn't contains the expected string.", nonRunningPicocli.getErrString().contains("Build time option: '--db' not usable with pre-built image and --optimized"));
+    }
+    
+    @Test
+    public void failIfOptimizedUsedForFirstFastStartup() {
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("start", "--optimized");
+        assertEquals(CommandLine.ExitCode.USAGE, nonRunningPicocli.exitCode);
+        assertThat(nonRunningPicocli.getErrString(), containsString("The '--optimized' flag was used for first ever server start."));
+    }
+
 }

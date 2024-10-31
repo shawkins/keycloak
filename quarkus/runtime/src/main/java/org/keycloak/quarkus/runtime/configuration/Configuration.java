@@ -43,7 +43,7 @@ public final class Configuration {
 
     public static final char OPTION_PART_SEPARATOR_CHAR = '-';
     public static final String OPTION_PART_SEPARATOR = String.valueOf(OPTION_PART_SEPARATOR_CHAR);
-    private static final String KC_OPTIMIZED = NS_KEYCLOAK_PREFIX + "optimized";
+    public static final String KC_OPTIMIZED = NS_KEYCLOAK_PREFIX + "optimized";
 
     private Configuration() {
 
