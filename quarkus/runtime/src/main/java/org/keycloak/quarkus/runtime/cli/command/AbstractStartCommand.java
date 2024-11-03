@@ -20,7 +20,6 @@ package org.keycloak.quarkus.runtime.cli.command;
 import org.keycloak.config.OptionCategory;
 import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.Messages;
-import org.keycloak.quarkus.runtime.cli.ExecutionExceptionHandler;
 import org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource;
 import org.keycloak.quarkus.runtime.configuration.mappers.HostnameV2PropertyMappers;
 import org.keycloak.quarkus.runtime.configuration.mappers.HttpPropertyMappers;
@@ -28,8 +27,6 @@ import org.keycloak.quarkus.runtime.configuration.mappers.HttpPropertyMappers;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import picocli.CommandLine;
 
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getRawPersistedProperties;
 
@@ -40,16 +37,15 @@ public abstract class AbstractStartCommand extends AbstractCommand implements Ru
     public void run() {
         Environment.setParsedCommand(this);
         doBeforeRun();
-        CommandLine cmd = spec.commandLine();
         HttpPropertyMappers.validateConfig();
         HostnameV2PropertyMappers.validateConfig();
         validateConfig();
 
         if (ConfigArgsConfigSource.getAllCliArgs().contains(OPTIMIZED_BUILD_OPTION_LONG) && !wasBuildEverRun()) {
-            executionError(spec.commandLine(), Messages.optimizedUsedForFirstStartup());
+            picocli.executionError(Messages.optimizedUsedForFirstStartup(), null);
         }
         
-        picocli.start((ExecutionExceptionHandler) cmd.getExecutionExceptionHandler(), cmd.getErr(), cmd.getParseResult().originalArgs().toArray(new String[0]));
+        picocli.start();
     }
 
     protected void doBeforeRun() {

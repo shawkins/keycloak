@@ -23,8 +23,6 @@ import static org.keycloak.quarkus.runtime.Environment.getProfileOrDefault;
 import static org.keycloak.quarkus.runtime.Environment.isNonServerMode;
 import static org.keycloak.quarkus.runtime.Environment.isTestLaunchMode;
 import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.OPTIMIZED_BUILD_OPTION_LONG;
-import static org.keycloak.quarkus.runtime.cli.command.AbstractStartCommand.wasBuildEverRun;
-import static org.keycloak.quarkus.runtime.cli.command.Start.isDevProfileNotAllowed;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -33,8 +31,6 @@ import java.util.concurrent.ForkJoinPool;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.keycloak.common.profile.ProfileException;
-import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
-import picocli.CommandLine.ExitCode;
 
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
@@ -80,7 +76,7 @@ public class KeycloakMain implements QuarkusApplication {
         try {
             cliArgs = Picocli.parseArgs(args);
         } catch (PropertyException e) {
-            handleUsageError(e.getMessage(), picocli);
+            picocli.executionError(e.getMessage(), e.getCause());
             return;
         }
 
@@ -90,31 +86,16 @@ public class KeycloakMain implements QuarkusApplication {
             cliArgs.add("-h");
         } else if (isFastStart(cliArgs)) { // fast path for starting the server without bootstrapping CLI
 
-            if (!wasBuildEverRun()) {
-                handleUsageError(Messages.optimizedUsedForFirstStartup(), picocli);
-                return;
-            }
-
-            if (isDevProfileNotAllowed()) {
-                handleUsageError(Messages.devProfileNotAllowedError(Start.NAME), picocli);
-                return;
-            }
-
-            Environment.setParsedCommand(new Start());
-
             try {
-                PropertyMappers.sanitizeDisabledMappers();
-                PrintWriter outStream = new PrintWriter(System.out, true);
-                Picocli.validateConfig(cliArgs, new Start(), outStream);
+                Start start = new Start();
+                start.setPicocli(picocli);
+                // set optimized
+                // set dryrun
+                start.run();
             } catch (PropertyException | ProfileException e) {
-                handleUsageError(e.getMessage(), e.getCause(), picocli);
+                picocli.executionError(e.getMessage(), e.getCause());
                 return;
             }
-
-            ExecutionExceptionHandler errorHandler = new ExecutionExceptionHandler();
-            PrintWriter errStream = picocli.getErrWriter();
-
-            picocli.start(errorHandler, errStream, args);
 
             return;
         }
@@ -142,23 +123,12 @@ public class KeycloakMain implements QuarkusApplication {
         }
     }
 
-    private static void handleUsageError(String message, Picocli picocli) {
-        handleUsageError(message, null, picocli);
-    }
-
-    private static void handleUsageError(String message, Throwable cause, Picocli picocli) {
-        ExecutionExceptionHandler errorHandler = new ExecutionExceptionHandler();
-        PrintWriter errStream = picocli.getErrWriter();
-        errorHandler.error(errStream, message, cause);
-        picocli.exitOnFailure(ExitCode.USAGE, null);
-    }
-
     private static boolean isFastStart(List<String> cliArgs) {
         // 'start --optimized' should start the server without parsing CLI
         return cliArgs.size() == 2 && cliArgs.get(0).equals(Start.NAME) && cliArgs.stream().anyMatch(OPTIMIZED_BUILD_OPTION_LONG::equals);
     }
 
-    public static void start(ExecutionExceptionHandler errorHandler, PrintWriter errStream, String[] args) {
+    public static void start(ExecutionExceptionHandler errorHandler, PrintWriter errStream) {
         try {
             Quarkus.run(KeycloakMain.class, (exitCode, cause) -> {
                 if (cause != null) {
@@ -172,7 +142,7 @@ public class KeycloakMain implements QuarkusApplication {
                     // as we are replacing the default exit handler, we need to force exit
                     System.exit(exitCode);
                 }
-            }, args);
+            });
         } catch (Throwable cause) {
             errorHandler.error(errStream,
                     String.format("Unexpected error when starting the server in (%s) mode", getKeycloakModeFromProfile(getProfileOrDefault("prod"))),

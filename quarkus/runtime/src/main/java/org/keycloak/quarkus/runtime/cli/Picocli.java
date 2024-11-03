@@ -89,6 +89,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParameterException;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.DuplicateOptionAnnotationsException;
+import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Help.Ansi;
 import picocli.CommandLine.Help.Ansi.Style;
 import picocli.CommandLine.Help.ColorScheme;
@@ -108,6 +109,8 @@ public class Picocli {
         boolean includeRuntime;
         boolean includeBuildTime;
     }
+    
+    private ExecutionExceptionHandler errorHandler = new ExecutionExceptionHandler();
 
     public void parseAndRun(List<String> cliArgs) {
         // perform two passes over the cli args. First without option validation to determine the current command, then with option validation enabled
@@ -983,12 +986,18 @@ public class Picocli {
         }
     }
 
-    public void start(ExecutionExceptionHandler errorHandler, PrintWriter errStream, String[] args) {
-        KeycloakMain.start(errorHandler, errStream, args);
-    }
-
     public void build() throws Throwable {
         QuarkusEntryPoint.main();
+    }
+
+    public void executionError(String message, Throwable cause) {
+        PrintWriter errStream = this.getErrWriter();
+        errorHandler.error(errStream, message, cause);
+        this.exitOnFailure(ExitCode.USAGE, null);
+    }
+
+    public void start() {
+        KeycloakMain.start(errorHandler, getErrWriter());
     }
 
 }

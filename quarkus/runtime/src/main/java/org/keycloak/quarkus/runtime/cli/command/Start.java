@@ -57,7 +57,7 @@ public final class Start extends AbstractStartCommand implements Runnable {
 
     private void devProfileNotAllowedError() {
         if (isDevProfileNotAllowed()) {
-            executionError(spec.commandLine(), Messages.devProfileNotAllowedError(NAME));
+            picocli.executionError(Messages.devProfileNotAllowedError(NAME), null);
         }
     }
 
