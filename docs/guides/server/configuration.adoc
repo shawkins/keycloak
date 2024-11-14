@@ -257,7 +257,7 @@ db-url-host=keycloak-postgres
 db-username=keycloak
 db-password=change_me
 hostname=mykeycloak.acme.com
-https-certificate-file
+https-certificate-file=certfile
 ----
 
 . Start the server with the optimized parameter
@@ -265,6 +265,8 @@ https-certificate-file
     <@kc.start parameters="--optimized"/>
 
 You can achieve most optimizations to startup and runtime behavior by using the `build` command. Also, by using the `keycloak.conf` file as a configuration source, you avoid some steps at startup that would otherwise require command line parameters, such as initializing the CLI itself. As a result, the server starts up even faster.
+
+WARNING: The example above includes the database password in plaintext in a common configuration file. Environment variables or an encrypted keystore are preferred for sensitive values.
 
 == Underlying concepts
 This section gives an overview of the underlying concepts {project_name} uses, especially when it comes to optimizing the startup.

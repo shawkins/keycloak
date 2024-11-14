@@ -202,6 +202,8 @@ In the example, the line  `--db=postgres --features=token-exchange` sets the dat
 {project_name} then starts up and applies the configuration for the specific environment.
 This approach significantly increases startup time and creates an image that is mutable, which is not the best practice.
 
+WARNING: The example above implies providing the password as plaintext on the CLI - you should should use a more secure mechanism, such as an environment variable instead.
+
 == Provide initial admin credentials when running in a container
 {project_name} only allows to create the initial admin user from a local network connection. This is not the case when running in a container, so you have to provide the following environment variables when you run the image:
 
