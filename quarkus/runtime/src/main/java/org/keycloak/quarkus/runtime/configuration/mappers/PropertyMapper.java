@@ -27,7 +27,6 @@ import static org.keycloak.quarkus.runtime.configuration.Configuration.toEnvVarF
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -82,13 +81,13 @@ public class PropertyMapper<T> {
     private Pattern envVarNameWildcardPattern;
     private Matcher toWildcardMatcher;
     private Pattern toWildcardPattern;
-    private Function<Set<String>, Set<String>> wildcardValuesTransformer;
+    private Function<Set<String>, Set<String>> wildcardKeysTransformer;
 
     PropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
                    ValueMapper mapper,
                    String mapFrom, ValueMapper parentMapper,
                    String paramLabel, boolean mask, BiConsumer<PropertyMapper<T>, ConfigValue> validator,
-                   String description, BooleanSupplier required, String requiredWhen, Function<Set<String>, Set<String>> wildcardValuesTransformer) {
+                   String description, BooleanSupplier required, String requiredWhen, Function<Set<String>, Set<String>> wildcardKeysTransformer) {
         this.option = option;
         this.to = to == null ? getFrom() : to;
         this.enabled = enabled;
@@ -127,7 +126,7 @@ public class PropertyMapper<T> {
                 }
             }
 
-            this.wildcardValuesTransformer = wildcardValuesTransformer;
+            this.wildcardKeysTransformer = wildcardKeysTransformer;
         }
     }
 
@@ -136,7 +135,7 @@ public class PropertyMapper<T> {
     }
 
     ConfigValue getConfigValue(String name, ConfigSourceInterceptorContext context) {
-        String from = getFrom(getWildcardValue(name).orElse(null));
+        String from = getFrom(getMappedKey(name).orElse(null));
 
         if (to != null && to.endsWith(OPTION_PART_SEPARATOR)) {
             // in case mapping is based on prefixes instead of full property names
@@ -175,7 +174,7 @@ public class PropertyMapper<T> {
         return context.proceed(name);
     }
 
-    public Set<String> getWildcardValues() {
+    public Set<String> getWildcardKeys() {
         if (!hasWildcard()) {
             return Set.of();
         }
@@ -183,24 +182,24 @@ public class PropertyMapper<T> {
         // this is not optimal
         // TODO find an efficient way to get all values that match the wildcard
         Set<String> values = StreamSupport.stream(Configuration.getPropertyNames().spliterator(), false)
-                .map(n -> getWildcardValue(n, false))
+                .map(n -> getMappedKey(n, true, false, false))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
 
-        if (wildcardValuesTransformer != null) {
-            return wildcardValuesTransformer.apply(values);
+        if (wildcardKeysTransformer != null) {
+            return wildcardKeysTransformer.apply(values);
         }
 
         return values;
     }
 
-    public Set<String> getMappedWildcardOptionNames() {
+    public Set<String> getToWithWildcards() {
         if (toWildcardMatcher == null) {
             return Set.of();
         }
 
-        return getWildcardValues().stream()
+        return getWildcardKeys().stream()
                 .map(v -> toWildcardMatcher.replaceFirst(v))
                 .collect(Collectors.toSet());
     }
@@ -241,10 +240,10 @@ public class PropertyMapper<T> {
         return this.option.getType();
     }
 
-    public String getFrom(String wildcardValue) {
+    public String getFrom(String wildcardKey) {
         String from = this.option.getKey();
-        if (hasWildcard() && wildcardValue != null) {
-            from = fromWildcardMatcher.replaceFirst(wildcardValue);
+        if (hasWildcard() && wildcardKey != null) {
+            from = fromWildcardMatcher.replaceFirst(wildcardKey);
         }
         return MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX + from;
     }
@@ -287,10 +286,10 @@ public class PropertyMapper<T> {
         return !this.option.isBuildTime();
     }
 
-    public String getTo(String wildcardValue) {
+    public String getTo(String wildcardKey) {
         String to = this.to;
-        if (hasWildcard() && wildcardValue != null) {
-            to = toWildcardMatcher.replaceFirst(wildcardValue);
+        if (hasWildcard() && wildcardKey != null) {
+            to = toWildcardMatcher.replaceFirst(wildcardKey);
         }
         return to;
     }
@@ -340,28 +339,34 @@ public class PropertyMapper<T> {
     }
 
     /**
-     * Extracts the wildcard value from the given option name.
+     * Returns a mapped key for the given option name if a relevant mapping is available, or empty otherwise.
+     * Currently, it only attempts to extract the wildcard key from the given option name.
      * E.g. for the option "log-level-<category>" and the option name "log-level-io.quarkus",
      * the wildcard value would be "io.quarkus".
      */
-    private Optional<String> getWildcardValue(String option, boolean includeMappedToOptions) {
+    private Optional<String> getMappedKey(String originalKey, boolean tryFrom, boolean tryEnvVar, boolean tryTo) {
         if (!hasWildcard()) {
             return Optional.empty();
         }
 
-        Matcher matcher = fromWildcardPattern.matcher(option);
-        if (matcher.matches()) {
-            return Optional.of(matcher.group(1));
+        if (tryFrom) {
+            Matcher matcher = fromWildcardPattern.matcher(originalKey);
+            if (matcher.matches()) {
+                return Optional.of(matcher.group(1));
+            }
         }
 
-        matcher = envVarNameWildcardPattern.matcher(option);
-        if (matcher.matches()) {
-            String value = matcher.group(1);
-            value = value.toLowerCase().replace("_", "."); // we opiniotatedly convert env var names to CLI format with dots
-            return Optional.of(value);
+        if (tryEnvVar) {
+            Matcher matcher = envVarNameWildcardPattern.matcher(originalKey);
+            if (matcher.matches()) {
+                String value = matcher.group(1);
+                value = value.toLowerCase().replace("_", "."); // we opiniotatedly convert env var names to CLI format with dots
+                return Optional.of(value);
+            }
         }
 
-        if (includeMappedToOptions && toWildcardPattern != null && (matcher = toWildcardPattern.matcher(option)).matches()) {
+        if (tryTo && toWildcardPattern != null) {
+            Matcher matcher = toWildcardPattern.matcher(originalKey);
             if (matcher.matches()) {
                 return Optional.of(matcher.group(1));
             }
@@ -370,13 +375,12 @@ public class PropertyMapper<T> {
         return Optional.empty();
     }
 
-    /**
-     * Extracts the wildcard value from the given option name.
-     * E.g. for the option "log-level-<category>" and the option name "log-level-io.quarkus",
-     * the wildcard value would be "io.quarkus".
-     */
-    public Optional<String> getWildcardValue(String option) {
-        return getWildcardValue(option, true);
+    public Optional<String> getMappedKey(String originalKey) {
+        return getMappedKey(originalKey, true, false, true);
+    }
+
+    public Optional<String> getMappedEnvVarKey(String originalKey) {
+        return getMappedKey(originalKey, false, true, false);
     }
 
     private ConfigValue transformValue(String name, ConfigValue configValue, ConfigSourceInterceptorContext context, boolean parentValue) {
@@ -386,7 +390,7 @@ public class PropertyMapper<T> {
         boolean mapped = false;
         var theMapper = parentValue ? this.parentMapper : this.mapper;
         if (theMapper != null && (!name.equals(getFrom()) || parentValue)) {
-            String nameForMapper = hasWildcard() ? getWildcardValue(name).orElse(name) : name;
+            String nameForMapper = getMappedKey(name).orElse(name);
             mappedValue = theMapper.map(nameForMapper, value, context);
             mapped = true;
         }
@@ -466,7 +470,7 @@ public class PropertyMapper<T> {
         private String description;
         private BooleanSupplier isRequired = () -> false;
         private String requiredWhen = "";
-        private Function<Set<String>, Set<String>> wildcardValuesTransformer;
+        private Function<Set<String>, Set<String>> wildcardKeysTransformer;
 
         public Builder(Option<T> option) {
             this.option = option;
@@ -599,8 +603,8 @@ public class PropertyMapper<T> {
             return this;
         }
 
-        public Builder<T> wildcardValuesTransformer(Function<Set<String>, Set<String>> wildcardValuesTransformer) {
-            this.wildcardValuesTransformer = wildcardValuesTransformer;
+        public Builder<T> wildcardKeysTransformer(Function<Set<String>, Set<String>> wildcardValuesTransformer) {
+            this.wildcardKeysTransformer = wildcardValuesTransformer;
             return this;
         }
 
@@ -608,7 +612,7 @@ public class PropertyMapper<T> {
             if (paramLabel == null && Boolean.class.equals(option.getType())) {
                 paramLabel = Boolean.TRUE + "|" + Boolean.FALSE;
             }
-            return new PropertyMapper<>(option, to, isEnabled, enabledWhen, mapper, mapFrom, parentMapper, paramLabel, isMasked, validator, description, isRequired, requiredWhen, wildcardValuesTransformer);
+            return new PropertyMapper<>(option, to, isEnabled, enabledWhen, mapper, mapFrom, parentMapper, paramLabel, isMasked, validator, description, isRequired, requiredWhen, wildcardKeysTransformer);
         }
     }
 

@@ -120,7 +120,7 @@ public final class Configuration {
      * @return a map of config values where the key is the resolved wildcard (e.g. category) and the value is the config value
      */
     public static Map<String, ConfigValue> getKcConfigValues(PropertyMapper<?> mapper) {
-        return mapper.getWildcardValues().stream()
+        return mapper.getWildcardKeys().stream()
                 .collect(Collectors.toMap(v -> v, v -> getConfigValue(mapper.getFrom(v))));
     }
 

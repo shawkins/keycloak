@@ -110,7 +110,7 @@ public final class LoggingPropertyMappers {
                 fromOption(LoggingOptions.LOG_LEVEL_CATEGORY)
                         .to("quarkus.log.category.\"<categories>\".level")
                         .validator(LoggingPropertyMappers::validateCategoryLogLevel)
-                        .wildcardValuesTransformer(LoggingPropertyMappers::getConfiguredLogCategories)
+                        .wildcardKeysTransformer(LoggingPropertyMappers::getConfiguredLogCategories)
                         .transformer((v,c) -> toLevel(v).getName())
                         .mapFrom(LoggingOptions.LOG_LEVEL, LoggingPropertyMappers::resolveCategoryLogLevelFromParentLogLevelOption) // a fallback to log-level
                         .paramLabel("level")

@@ -131,13 +131,13 @@ public class ConfigArgsConfigSource extends PropertiesConfigSource {
                 if (mapper != null) {
                     String to = mapper.getTo();
 
-                    String wildcardValue = mapper.getWildcardValue(key).orElse(null);
+                    String mappedKey = mapper.getMappedKey(key).orElse(null);
 
                     if (to != null) {
-                        properties.put(mapper.getTo(wildcardValue), value);
+                        properties.put(mapper.getTo(mappedKey), value);
                     }
 
-                    properties.put(mapper.getFrom(wildcardValue), value);
+                    properties.put(mapper.getFrom(mappedKey), value);
                 }
             }
         }, ignored -> {});
