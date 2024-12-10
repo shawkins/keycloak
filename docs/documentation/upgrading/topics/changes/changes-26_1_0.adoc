@@ -6,7 +6,7 @@ Starting from this release, when `--cache-config-file` is not set, the default I
 
 = Default `db` option for production deprecated.
 
-The default value for the `db` option, `def-file`, is now deprecated in production profiles. For `build` or non-optimized `start` and non-server commands `import`, `export`, or `bootstrap-admin` in the production profile, a value should be explicitly supplied. This is to prevent the unintentional usage of the `dev-file` (H2) database in a production environment, which is typically indicative of a misconfiguration.
+The default value for the `db` option (`dev-file`) is now deprecated in production profiles. For `build` or non-optimized `start` and non-server commands `import`, `export`, or `bootstrap-admin` in the production profile, a value should be explicitly supplied. This is to prevent the unintentional usage of the `dev-file` (H2) database in a production environment, which is typically indicative of a misconfiguration.
 
 = Embedded Infinispan: `work` cache must be replicated
 
