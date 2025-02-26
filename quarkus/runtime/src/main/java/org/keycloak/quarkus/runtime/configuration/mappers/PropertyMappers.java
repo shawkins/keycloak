@@ -10,6 +10,7 @@ import org.keycloak.config.ConfigSupportLevel;
 import org.keycloak.config.Option;
 import org.keycloak.config.OptionCategory;
 import org.keycloak.quarkus.runtime.Environment;
+import org.keycloak.quarkus.runtime.cli.Picocli;
 import org.keycloak.quarkus.runtime.cli.PropertyException;
 import org.keycloak.quarkus.runtime.cli.command.AbstractCommand;
 import org.keycloak.quarkus.runtime.cli.command.Build;
@@ -232,6 +233,12 @@ public final class PropertyMappers {
         return mappers.stream().filter(f -> allowedCategories.contains(f.getCategory())).collect(Collectors.toSet());
     }
 
+    private static class WildcardTree {
+        Map<String, WildcardTree> parts = new HashMap<String, WildcardTree>();
+
+        List<WildcardPropertyMapper<?>> mappers = new ArrayList<WildcardPropertyMapper<?>>();
+    }
+
     private static class MappersConfig extends MultivaluedHashMap<String, PropertyMapper<?>> {
 
         private final Map<OptionCategory, List<PropertyMapper<?>>> buildTimeMappers = new EnumMap<>(OptionCategory.class);
@@ -242,6 +249,10 @@ public final class PropertyMappers {
 
         private final Set<WildcardPropertyMapper<?>> wildcardMappers = new HashSet<>();
         private final Map<String, WildcardPropertyMapper<?>> wildcardMapFrom = new HashMap<>();
+
+        private final WildcardTree wildcardDotRoot = new WildcardTree();
+        private final WildcardTree wildcardUnderscoreRoot = new WildcardTree();
+        private final WildcardTree wildcardDashRoot = new WildcardTree();
 
         public void addAll(PropertyMapper<?>[] mappers) {
             for (PropertyMapper<?> mapper : mappers) {
@@ -265,8 +276,25 @@ public final class PropertyMappers {
                     wildcardMapFrom.put(mapper.getMapFrom(), (WildcardPropertyMapper<?>) mapper);
                 }
                 wildcardMappers.add((WildcardPropertyMapper<?>)mapper);
+                // assumes that cli and from are derived from one another
+                buildTree(mapper, wildcardDashRoot, '-', mapper.getCliFormat().substring(Picocli.ARG_PREFIX.length()));
+                buildTree(mapper, wildcardUnderscoreRoot, '_', mapper.getOption().getKey().toUpperCase().replace("-", "_"));
+                // assumes mapping to non-kc property
+                if (mapper.getTo() != null && !mapper.getFrom().equals(mapper.getTo())) {
+                    buildTree(mapper, wildcardDotRoot, '.', mapper.getTo());
+                }
             } else {
                 handleMapper(mapper, this::add);
+            }
+        }
+
+        private void buildTree(PropertyMapper<?> mapper, WildcardTree level, char delim, String key) {
+            for (String part : key.split("\\"+delim)) {
+                if (part.contains("<")) {
+                    level.mappers.add((WildcardPropertyMapper<?>)mapper);
+                    break;
+                }
+                level = level.parts.computeIfAbsent(part, k -> new WildcardTree());
             }
         }
 
@@ -287,6 +315,47 @@ public final class PropertyMappers {
             }
         }
 
+        List<PropertyMapper<?>> findWildcards(String key) {
+            ArrayList<PropertyMapper<?>> result = new ArrayList<PropertyMapper<?>>();
+            char delim;
+            int index = 0;
+            WildcardTree root = wildcardDashRoot;
+            if (key.startsWith(Picocli.ARG_PREFIX)) {
+                delim = '-';
+                index = Picocli.ARG_PREFIX.length();
+            } else if (Character.isUpperCase((key.charAt(0)))) {
+                delim = '_';
+                index = MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.length();
+                root = wildcardUnderscoreRoot;
+            } else if (key.startsWith(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX)) {
+                delim = '-';
+                index = MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX.length();
+            } else {
+                delim = '.';
+                root = wildcardDotRoot;
+            }
+            findWildcards(index, key, delim, root, result);
+            return result;
+        }
+
+        void findWildcards(int index, String key, char delim, WildcardTree level, ArrayList<PropertyMapper<?>> result) {
+            if (!level.mappers.isEmpty()) {
+                level.mappers.stream()
+                        .filter(m -> m.matchesWildcardOptionName(key))
+                        .forEach(result::add);
+                return; // assume there is no nesting
+            }
+            int nextIndex = key.indexOf(delim, index);
+            if (nextIndex == -1 || nextIndex - 1 == index || nextIndex == key.length() - 1) {
+                return;
+            }
+            String part = key.substring(index, nextIndex);
+            WildcardTree next = level.parts.get(part);
+            if (next != null) {
+                findWildcards(nextIndex + 1, key, delim, next, result);
+            }
+        }
+
         @Override
         @SuppressWarnings({"rawtypes", "unchecked"})
         public List<PropertyMapper<?>> get(Object key) {
@@ -298,10 +367,7 @@ public final class PropertyMappers {
                 return ret;
             }
 
-            // TODO: we may want to introduce a prefix tree here as we add more wildcardMappers
-            ret = wildcardMappers.stream()
-                    .filter(m -> m.matchesWildcardOptionName(strKey))
-                    .toList();
+            ret = findWildcards(strKey);
             if (!ret.isEmpty()) {
                 return ret;
             }
