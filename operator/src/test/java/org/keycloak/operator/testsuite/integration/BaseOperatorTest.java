@@ -145,8 +145,7 @@ public class BaseOperatorTest implements QuarkusTestAfterEachCallback {
     if (operatorDeployment == OperatorDeployment.remote) {
       createRBACresourcesAndOperatorDeployment();
     } else {
-      createOperator();
-      registerReconcilers();
+      operator = createOperator(k8sclient);
       operator.start();
     }
 
@@ -194,26 +193,25 @@ public class BaseOperatorTest implements QuarkusTestAfterEachCallback {
     Awaitility.await().pollInterval(100, TimeUnit.MILLISECONDS).untilAsserted(() -> client.resources(KeycloakRealmImport.class).list());
   }
 
-  private static void registerReconcilers() {
+  public static Operator createOperator(KubernetesClient client) {
+    // create the operator to use the current client / namespace and injected dependent resources
+    // to be replaced later with full cdi construction or test mechanics from quarkus operator sdk
+    var operator = new Operator(new BaseConfigurationService() {
+        @Override
+        public KubernetesClient getKubernetesClient() {
+            return client;
+        }
+    });
     Log.info("Registering reconcilers for operator : " + operator + " [" + operatorDeployment + "]");
 
     Instance<Reconciler<? extends HasMetadata>> reconcilers = CDI.current().select(new TypeLiteral<>() {});
 
     for (Reconciler<?> reconciler : reconcilers) {
       Log.info("Register and apply : " + reconciler.getClass().getName());
-      operator.register(reconciler, overrider -> overrider.settingNamespace(namespace));
+      operator.register(reconciler, overrider -> overrider.settingNamespace(client.getNamespace()));
     }
-  }
 
-  private static void createOperator() {
-    // create the operator to use the current client / namespace and injected dependent resources
-    // to be replaced later with full cdi construction or test mechanics from quarkus operator sdk
-    operator = new Operator(new BaseConfigurationService() {
-        @Override
-        public KubernetesClient getKubernetesClient() {
-            return k8sclient;
-        }
-    });
+    return operator;
   }
 
   private static void createNamespace() {
