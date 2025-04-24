@@ -50,13 +50,28 @@ public final class LDAPContextManager implements AutoCloseable {
 
     private LdapContext ldapContext;
 
-    public LDAPContextManager(KeycloakSession session, LDAPConfig connectionProperties) {
+    private LDAPContextManager(KeycloakSession session, LDAPConfig connectionProperties) {
         this.session = session;
         this.ldapConfig = connectionProperties;
     }
 
     public static LDAPContextManager create(KeycloakSession session, LDAPConfig connectionProperties) {
-        return new LDAPContextManager(session, connectionProperties);
+        Map<LDAPConfig, LDAPContextManager> contexts = session.getAttribute("LDAPContexts", Map.class);
+        if (contexts == null) {
+            contexts = new HashMap<LDAPConfig, LDAPContextManager>();
+            var toClose = contexts;
+            session.enlistForClose(() -> {
+                toClose.values().forEach(LDAPContextManager::managedClose);
+                toClose.clear();
+            });
+        }
+        LDAPContextManager result = contexts.get(connectionProperties);
+        if (result == null) {
+            result = new LDAPContextManager(session, connectionProperties);
+            contexts.put(connectionProperties, result);
+        }
+
+        return result;
     }
 
     private void createLdapContext() throws NamingException {
@@ -251,7 +266,14 @@ public final class LDAPContextManager implements AutoCloseable {
 
     @Override
     public void close() {
-        if (vaultStringSecret != null) vaultStringSecret.close();
+        // only needed if we want to limit the number of contexts per session
+        // or free up resources early
+    }
+
+    private void managedClose() {
+        if (vaultStringSecret != null) {
+            vaultStringSecret.close();
+        }
         if (tlsResponse != null) {
             try {
                 tlsResponse.close();
