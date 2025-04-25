@@ -50,13 +50,15 @@ public final class LDAPContextManager implements AutoCloseable {
 
     private LdapContext ldapContext;
 
-    public LDAPContextManager(KeycloakSession session, LDAPConfig connectionProperties) {
+    private LDAPContextManager(KeycloakSession session, LDAPConfig connectionProperties) {
         this.session = session;
         this.ldapConfig = connectionProperties;
     }
 
     public static LDAPContextManager create(KeycloakSession session, LDAPConfig connectionProperties) {
-        return new LDAPContextManager(session, connectionProperties);
+        LDAPContextManager result = new LDAPContextManager(session, connectionProperties);
+        session.enlistForClose(result::close);
+        return result;
     }
 
     private void createLdapContext() throws NamingException {
@@ -252,6 +254,7 @@ public final class LDAPContextManager implements AutoCloseable {
     @Override
     public void close() {
         if (vaultStringSecret != null) vaultStringSecret.close();
+        vaultStringSecret = null;
         if (tlsResponse != null) {
             try {
                 tlsResponse.close();
@@ -259,6 +262,7 @@ public final class LDAPContextManager implements AutoCloseable {
                 logger.error("Could not close Ldap tlsResponse.", e);
             }
         }
+        tlsResponse = null;
 
         if (ldapContext != null) {
             try {
@@ -267,5 +271,6 @@ public final class LDAPContextManager implements AutoCloseable {
                 logger.error("Could not close Ldap context.", e);
             }
         }
+        ldapContext = null;
     }
 }
