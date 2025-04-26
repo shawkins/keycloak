@@ -28,6 +28,8 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
     private String toPrefix;
     private String toSuffix;
 
+    private String replacementChar = ".";
+
     public WildcardPropertyMapper(Option<T> option, String to, BooleanSupplier enabled, String enabledWhen,
             BiFunction<String, ConfigSourceInterceptorContext, String> mapper,
             String mapFrom, BiFunction<String, ConfigSourceInterceptorContext, String> parentMapper,
@@ -42,8 +44,8 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         }
 
         if (to != null) {
-            if (!to.startsWith(MicroProfileConfigProvider.NS_QUARKUS_PREFIX)) {
-                throw new IllegalArgumentException("Wildcards should map to quarkus options. If not, PropertyMappers logic will need adjusted");
+            if (to.startsWith(MicroProfileConfigProvider.NS_KEYCLOAK_PREFIX)) {
+                replacementChar = "-";
             }
             this.toPrefix = to.substring(0, to.indexOf(WILDCARD_FROM_START));
             int lastIndexOf = to.lastIndexOf(">");
@@ -90,7 +92,7 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         if (key.startsWith(fromPrefix)) {
             result = key.substring(fromPrefix.length());
         } else if (key.startsWith(toPrefix) && key.endsWith(toSuffix)) {
-            // TODO: this presumes that the quarkus value is quoted
+            // TODO: this effectively presumes that quarkus values are quoted
             result = key.substring(toPrefix.length(), key.length() - toSuffix.length());
         }
         // TODO: it would be nice to warn the user for property file or env entries that look
@@ -112,7 +114,7 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
 
     public Optional<String> getKcKeyForEnvKey(String envKey, String transformedKey) {
         if (transformedKey.startsWith(fromPrefix)) {
-            return Optional.ofNullable(getFrom(envKey.substring(fromPrefix.length()).toLowerCase().replace("_", ".")));
+            return Optional.ofNullable(getFrom(envKey.substring(fromPrefix.length()).toLowerCase().replace("_", replacementChar)));
         }
         return Optional.empty();
     }

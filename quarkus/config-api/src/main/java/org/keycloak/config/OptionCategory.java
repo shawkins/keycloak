@@ -7,7 +7,6 @@ public enum OptionCategory {
     TRANSACTION("Transaction",30, ConfigSupportLevel.SUPPORTED),
     FEATURE("Feature", 40, ConfigSupportLevel.SUPPORTED),
     HOSTNAME_V2("Hostname v2", 50, ConfigSupportLevel.SUPPORTED),
-    HOSTNAME_V1("Hostname v1", 51, ConfigSupportLevel.DEPRECATED),
     HTTP("HTTP(S)", 60, ConfigSupportLevel.SUPPORTED),
     HEALTH("Health", 70, ConfigSupportLevel.SUPPORTED),
     MANAGEMENT("Management", 75, ConfigSupportLevel.SUPPORTED),
@@ -21,6 +20,7 @@ public enum OptionCategory {
     SECURITY("Security", 120, ConfigSupportLevel.SUPPORTED),
     EXPORT("Export", 130, ConfigSupportLevel.SUPPORTED),
     IMPORT("Import", 140, ConfigSupportLevel.SUPPORTED),
+    PROVIDERS("Providers", 150, ConfigSupportLevel.SUPPORTED),
     BOOTSTRAP_ADMIN("Bootstrap Admin", 998, ConfigSupportLevel.SUPPORTED),
     GENERAL("General", 999, ConfigSupportLevel.SUPPORTED);
 

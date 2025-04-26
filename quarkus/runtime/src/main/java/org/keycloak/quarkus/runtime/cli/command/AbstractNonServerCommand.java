@@ -46,7 +46,6 @@ public abstract class AbstractNonServerCommand extends AbstractStartCommand impl
         return super.getOptionCategories().stream().filter(optionCategory ->
                 optionCategory != OptionCategory.HTTP &&
                         optionCategory != OptionCategory.PROXY &&
-                        optionCategory != OptionCategory.HOSTNAME_V1 &&
                         optionCategory != OptionCategory.HOSTNAME_V2 &&
                         optionCategory != OptionCategory.METRICS &&
                         optionCategory != OptionCategory.SECURITY &&

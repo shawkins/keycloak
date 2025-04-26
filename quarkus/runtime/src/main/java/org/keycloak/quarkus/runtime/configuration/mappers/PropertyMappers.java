@@ -75,6 +75,7 @@ public final class PropertyMappers {
         MAPPERS.addAll(ImportPropertyMappers.getMappers());
         MAPPERS.addAll(TruststorePropertyMappers.getMappers());
         MAPPERS.addAll(BootstrapAdminPropertyMappers.getMappers());
+        MAPPERS.addAll(ProviderPropertyMappers.getMappers());
     }
 
     public static ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
@@ -96,13 +97,9 @@ public final class PropertyMappers {
         return mapper.forKey(name).getConfigValue(name, context);
     }
 
-    public static boolean isSpiBuildTimeProperty(String name) {
-        return name.startsWith(KC_SPI_PREFIX) && (name.endsWith("-provider") || name.endsWith("-enabled") || name.endsWith("-provider-default"));
-    }
-
     private static boolean isKeycloakRuntime(String name, PropertyMapper<?> mapper) {
         if (mapper == null) {
-            return name.startsWith(MicroProfileConfigProvider.NS_KEYCLOAK) && !isSpiBuildTimeProperty(name);
+            return false;
         }
         return mapper.isRunTime();
     }

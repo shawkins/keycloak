@@ -65,7 +65,6 @@ import org.keycloak.quarkus.runtime.configuration.ConfigArgsConfigSource;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.DisabledMappersInterceptor;
 import org.keycloak.quarkus.runtime.configuration.KcUnmatchedArgumentException;
-import org.keycloak.quarkus.runtime.configuration.KeycloakPropertiesConfigSource;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 import org.keycloak.quarkus.runtime.configuration.PropertyMappingInterceptor;
 import org.keycloak.quarkus.runtime.configuration.QuarkusPropertiesConfigSource;
@@ -512,16 +511,12 @@ public class Picocli {
         if (!key.startsWith(PropertyMappers.KC_SPI_PREFIX)) {
             return;
         }
-        boolean buildTimeOption = PropertyMappers.isSpiBuildTimeProperty(key);
+        ConfigValue configValue = Configuration.getConfigValue(key);
+        String configValueStr = configValue.getValue();
 
-        if (!buildTimeOption) {
-            ConfigValue configValue = Configuration.getConfigValue(key);
-            String configValueStr = configValue.getValue();
-
-            // don't consider missing or anything below standard env properties
-            if (configValueStr != null && isUserModifiable(configValue)) {
-                ignoredRunTime.add(key);
-            }
+        // don't consider missing or anything below standard env properties
+        if (configValueStr != null && isUserModifiable(configValue)) {
+            ignoredRunTime.add(key);
         }
     }
 
@@ -621,7 +616,7 @@ public class Picocli {
                 // TODO: this is not correct - we are including runtime properties here, but at least they
                 // are already coming from a file
                 quarkus = true;
-            } else if (!PropertyMappers.isSpiBuildTimeProperty(name)) {
+            } else {
                 return;
             }
             ConfigValue value = Configuration.getNonPersistedConfigValue(name);
