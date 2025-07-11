@@ -70,6 +70,14 @@ public class WildcardPropertyMapper<T> extends PropertyMapper<T> {
         return toPrefix + wildcardKey + toSuffix;
     }
 
+    public String getAdditionalTo(String key) {
+        if (this.option.getKey().startsWith("db-kind")) {
+            String wildcard = extractWildcardValue(key).orElseThrow();
+            return ((WildcardPropertyMapper)PropertyMappers.getMapper("kc.db-url-full-" + wildcard)).getTo(wildcard);
+        }
+        return null;
+    }
+
     public String getFrom(String wildcardKey) {
         return fromPrefix + wildcardKey;
     }

@@ -29,6 +29,7 @@ import org.keycloak.config.OptionCategory;
 import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper;
 import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
+import org.keycloak.quarkus.runtime.configuration.mappers.WildcardPropertyMapper;
 
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
@@ -102,6 +103,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
             }
             allMappers.remove(mapper);
 
+            String additionalTo = null;
             if (!mapper.hasWildcard()) {
                 // this is not a wildcard value, but may map to wildcards
                 // the current example is something like log-level=wildcardCat1:level,wildcardCat2:level
@@ -112,13 +114,15 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
                         return Stream.concat(Stream.of(name), wildCard.getToFromWildcardTransformer(value.getValue()));
                     }
                 }
+            } else {
+                additionalTo = ((WildcardPropertyMapper)mapper).getAdditionalTo(name);
             }
 
             mapper = mapper.forKey(name);
 
             // there is a corner case here: -1 for the reload period has no 'to' value.
             // if that becomes an issue we could use more metadata to perform a full mapping
-            return toDistinctStream(name, mapper.getTo());
+            return toDistinctStream(name, mapper.getTo(), additionalTo);
         });
 
         // include anything remaining that has a default value
