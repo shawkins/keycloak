@@ -395,9 +395,11 @@ class KeycloakProcessor {
                         .setInitListener(recorder.createDefaultUnitListener()));
             } else {
                 Properties properties = descriptor.getProperties();
+                String datasourceName = properties.getProperty(AvailableSettings.DATASOURCE);
+                configurePersistenceUnitProperties(datasourceName, descriptor, config, getDataSource(datasourceName, jdbcDataSources));
                 // register a listener for customizing the unit configuration at runtime
                 runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem("keycloak", descriptor.getName())
-                        .setInitListener(recorder.createUserDefinedUnitListener(properties.getProperty(AvailableSettings.DATASOURCE))));
+                        .setInitListener(recorder.createUserDefinedUnitListener(datasourceName)));
                 userManagedEntities.addAll(descriptor.getManagedClassNames());
             }
         }
@@ -419,12 +421,29 @@ class KeycloakProcessor {
         producer.produce(new PersistenceXmlDescriptorBuildItem(descriptor));
     }
 
-    private void configureDefaultPersistenceUnitProperties(ParsedPersistenceXmlDescriptor descriptor, HibernateOrmConfig config,
-            JdbcDataSourceBuildItem defaultDataSource) {
-        if (defaultDataSource == null || !defaultDataSource.isDefault()) {
-            throw new RuntimeException("The server datasource must be the default datasource.");
+    private void configurePersistenceUnitProperties(String name, ParsedPersistenceXmlDescriptor descriptor, HibernateOrmConfig config,
+            JdbcDataSourceBuildItem dataSource) {
+        Properties unitProperties = descriptor.getProperties();
+
+        final Optional<String> dialect = getOptionalKcValue(DatabaseOptions.DB_DIALECT.getKey() + "-" + name);
+        dialect.ifPresent(d -> unitProperties.setProperty(AvailableSettings.DIALECT, d));
+
+        final Optional<String> defaultSchema = getOptionalKcValue(DatabaseOptions.DB_SCHEMA.getKey() + "-" + name);
+        defaultSchema.ifPresent(ds -> unitProperties.setProperty(AvailableSettings.DEFAULT_SCHEMA, ds));
+
+        unitProperties.setProperty(AvailableSettings.JAKARTA_TRANSACTION_TYPE, PersistenceUnitTransactionType.JTA.name());
+        descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
+
+        if (getOptionalBooleanKcValue(DatabaseOptions.DB_SQL_JPA_DEBUG.getKey()).orElse(false)) {
+            unitProperties.put("hibernate.use_sql_comments", "true");
         }
 
+        getOptionalKcValue(DatabaseOptions.DB_SQL_LOG_SLOW_QUERIES.getKey())
+                .ifPresent(v -> unitProperties.put("hibernate.log_slow_query", v));
+    }
+
+    private void configureDefaultPersistenceUnitProperties(ParsedPersistenceXmlDescriptor descriptor, HibernateOrmConfig config,
+            JdbcDataSourceBuildItem defaultDataSource) {
         Properties unitProperties = descriptor.getProperties();
 
         final Optional<String> dialect = getOptionalKcValue(DatabaseOptions.DB_DIALECT.getKey());
@@ -952,5 +971,15 @@ class KeycloakProcessor {
         }
 
         throw new RuntimeException("No default datasource found. The server datasource must be the default datasource.");
+    }
+
+    static JdbcDataSourceBuildItem getDataSource(String name, List<JdbcDataSourceBuildItem> jdbcDataSources) {
+        for (JdbcDataSourceBuildItem jdbcDataSource : jdbcDataSources) {
+            if (name.equals(jdbcDataSource.getName())) {
+                return jdbcDataSource;
+            }
+        }
+
+        throw new RuntimeException("No datasource found with name " + name);
     }
 }
