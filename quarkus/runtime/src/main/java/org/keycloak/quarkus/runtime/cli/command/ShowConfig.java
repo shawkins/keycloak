@@ -115,11 +115,7 @@ public final class ShowConfig extends AbstractCommand {
 
     private void printProperty(String property, PropertyMapper<?> mapper, ConfigValue configValue) {
         String sourceName = configValue.getConfigSourceName();
-        String value = configValue.getRawValue();
-
-        if (value == null) {
-            value = configValue.getValue();
-        }
+        String value = configValue.getValue();
 
         value = maskValue(value, sourceName, mapper);
 
