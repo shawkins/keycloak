@@ -111,8 +111,10 @@ import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.KeycloakConfigSourceProvider;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 import org.keycloak.quarkus.runtime.configuration.PersistedConfigSource;
+import org.keycloak.quarkus.runtime.configuration.PropertyMappingInterceptor;
 import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper;
 import org.keycloak.quarkus.runtime.configuration.mappers.PropertyMappers;
+import org.keycloak.quarkus.runtime.configuration.mappers.WildcardPropertyMapper;
 import org.keycloak.quarkus.runtime.integration.resteasy.KeycloakHandlerChainCustomizer;
 import org.keycloak.quarkus.runtime.integration.resteasy.KeycloakTracingCustomizer;
 import org.keycloak.quarkus.runtime.logging.ClearMappedDiagnosticContextFilter;
@@ -372,15 +374,60 @@ class KeycloakProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ValidatePersistenceUnitsBuildItem.class)
-    void checkPersistenceUnits(KeycloakRecorder recorder, List<PersistenceXmlDescriptorBuildItem> descriptors) {
-        var descriptorsNames = descriptors.stream()
+    void checkPersistenceUnits(List<PersistenceXmlDescriptorBuildItem> descriptors) {
+        List<String> notSetPersistenceUnitsDBKinds = descriptors.stream()
                 .map(PersistenceXmlDescriptorBuildItem::getDescriptor)
                 .filter(descriptor -> !descriptor.getName().equals(DEFAULT_PERSISTENCE_UNIT)) // not default persistence unit
                 .map(KeycloakProcessor::getDatasourceNameFromPersistenceXml)
-                .toList();
-        recorder.validatePersistenceUnits(descriptorsNames);
+                .filter(this::missingDbKind)
+                .map(datasourceName -> DatabaseOptions.getNamedKey(DatabaseOptions.DB, datasourceName).orElseThrow()).toList();
+
+        if (!notSetPersistenceUnitsDBKinds.isEmpty()) {
+            throwConfigError("Detected additional named datasources without a DB kind set, please specify: %s".formatted(String.join(",", notSetPersistenceUnitsDBKinds)));
+        }
+    }
+
+    /**
+     * Try to find if DB kind is specified for the descriptor name.
+     * <p>
+     * Check it in order:
+     * <ol>
+     * <li> {@code db-kind-<descriptorName}
+     * <li> {@code quarkus.datasource."<descriptorName>".db-kind}
+     * <li> {@code quarkus.datasource.<descriptorName>.db-kind}
+     * </ol>
+     */
+    private boolean missingDbKind(String datasourceName) {
+        String key = NS_KEYCLOAK_PREFIX.concat(DatabaseOptions.getNamedKey(DatabaseOptions.DB, datasourceName).orElseThrow());
+        PropertyMappingInterceptor.disable();
+        try {
+            var from = Configuration.getConfigValue(key);
+
+            if (from.getValue() != null) {
+                return false; // user has directly specified
+            }
+
+            WildcardPropertyMapper<?> mapper = (WildcardPropertyMapper<?>)PropertyMappers.getMapper(key);
+
+            // check to see if a quarkus property is in use
+            String to = mapper.getTo(datasourceName);
+            var value = Configuration.getOptionalValue(to);
+            if (value.isEmpty()) {
+                String unquotedKey = to.replaceAll("\"", "");
+                value = Configuration.getOptionalValue(unquotedKey);
+                if (value.isPresent()) {
+                    logger.warnf(
+                            "You have set DB kind for '%s' datasource via an unquoted Quarkus property '%s'. "
+                            + "All datasource options must have the datasource name quoted to be compatible with Keycloak's db-* options.",
+                            datasourceName, unquotedKey);
+                }
+            }
+
+            return value.isEmpty();
+        } finally {
+            PropertyMappingInterceptor.enable();
+        }
     }
 
     /**
