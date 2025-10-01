@@ -20,6 +20,7 @@ package org.keycloak.it.cli.dist;
 import static io.restassured.RestAssured.when;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Tag;
@@ -28,6 +29,7 @@ import org.keycloak.it.junit5.extension.CLIResult;
 import org.keycloak.it.junit5.extension.DistributionTest;
 import org.keycloak.it.junit5.extension.RawDistOnly;
 import org.keycloak.it.junit5.extension.WithEnvVars;
+import org.keycloak.theme.ResourceLoader;
 
 import io.quarkus.test.junit.main.Launch;
 import io.restassured.RestAssured;
@@ -51,10 +53,26 @@ public class TraversalTest {
         m.find();
         String version = m.group(1);
 
-        int found = when().get("/resources/%s/login/keycloak.v2/css/styles.css".formatted(version)).getStatusCode();
+        int found = when().get("/resources/%s/common/keycloak/vendor/patternfly-v5/patternfly.min.css".formatted(version)).getStatusCode();
         int notFound1 = when().get("/resources/"+version+"/common/keycloak/..%255C..%255C..%255C..%255Cnone-security-profile.json").getStatusCode();
         int notFound2 = when().get("/resources/"+version+"/common/keycloak/..%252F..%252F..%252F..%252Fnone-security-profile.json").getStatusCode();
+        int notFound3 = when().get("/resources/"+version+"/common/keycloak/..%5C..%5C..%5C..%5Cnone-security-profile.json").getStatusCode();
+        int notFound4 = when().get("/resources/"+version+"/common/keycloak/..%2F..%2F..%2F..%2Fnone-security-profile.json").getStatusCode();
 
-        assertTrue(found == 200 && notFound1 == 404 && notFound2 == 404, found + " " + notFound1 + " " + notFound2);
+        String root = "theme/keycloak/common/resources/";
+        String resource = "vendor/patternfly-v5/patternfly.min.css";
+
+        try {
+            System.out.println(ResourceLoader.getResourceAsStream(root, resource));
+        } catch (IOException e) {
+        }
+
+        resource = "../../../../none-security-profile.json";
+        try {
+            System.out.println(ResourceLoader.getResourceAsStream(root, resource));
+        } catch (IOException e) {
+        }
+
+        assertTrue(found == 200 && notFound1 == 404 && notFound2 == 404 && notFound3 == 404 && notFound4 == 404, found + " " + notFound1 + " " + notFound2 + " " + notFound3 + " " + notFound4);
     }
 }

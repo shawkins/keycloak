@@ -13,13 +13,18 @@ public class ResourceLoader {
             return null;
         }
         Path rootPath = Path.of("/", root).normalize().toAbsolutePath();
-        Path resourcePath = rootPath.resolve(resource).normalize().toAbsolutePath();
+        Path other = Path.of(resource);
+        Path resolved = rootPath.resolve(other);
+        Path normalized = resolved.normalize();
+        Path resourcePath = normalized.toAbsolutePath();
+        System.out.println(other + " " + resolved + " " + normalized + " " + resourcePath);
         if (resourcePath.startsWith(rootPath)) {
             if (File.separatorChar == '/') {
                 resource = resourcePath.toString().substring(1);
             } else {
                 resource = resourcePath.toString().substring(2).replace('\\', '/');
             }
+            System.out.println(resource);
             URL url = classLoader().getResource(resource);
             return url != null ? url.openStream() : null;
         } else {
