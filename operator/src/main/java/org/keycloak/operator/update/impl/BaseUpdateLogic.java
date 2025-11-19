@@ -67,12 +67,23 @@ abstract class BaseUpdateLogic implements UpdateLogic {
         copyStatusFromExistStatefulSet(existing.get());
 
         Optional<String> storedHash = CRDUtils.getUpdateHash(existing.get());
+        var desiredStatefulSet = ContextUtils.getDesiredStatefulSet(context);
+        var desiredContainer = CRDUtils.firstContainerOf(desiredStatefulSet).orElseThrow(BaseUpdateLogic::containerNotFound);
 
-        if (storedHash.isPresent()) {
-            return hashEqualityCheck(ContextUtils.getUpdateHash(context), storedHash.get());
+        if (Objects.equals(CRDUtils.getUpdateHash(desiredStatefulSet).orElseThrow(), storedHash.orElse(null))) {
+            Log.debug("Hash is equals - skipping update logic");
+            return Optional.empty();
         }
 
-        return containerEqualityCheck();
+        var actualContainer = CRDUtils.firstContainerOf(existing.get()).orElseThrow(BaseUpdateLogic::containerNotFound);
+
+        if (isContainerEquals(actualContainer, desiredContainer)) {
+            // container is equals, no update required
+            Log.debug("No changes detected in the container - skipping update logic");
+            return Optional.empty();
+        }
+
+        return onUpdate();
     }
 
     @Override
@@ -94,37 +105,6 @@ abstract class BaseUpdateLogic implements UpdateLogic {
      * {@link StatefulSet}.
      */
     abstract Optional<UpdateControl<Keycloak>> onUpdate();
-
-    /**
-     * @return {@code true} if the actual and the desired {@link Container} are the same.
-     */
-    boolean isContainerEquals() {
-        var existing = ContextUtils.getCurrentStatefulSet(context).orElseThrow();
-        var desiredStatefulSet = ContextUtils.getDesiredStatefulSet(context);
-        var desiredContainer = CRDUtils.firstContainerOf(desiredStatefulSet).orElseThrow(BaseUpdateLogic::containerNotFound);
-        var actualContainer = CRDUtils.firstContainerOf(existing).orElseThrow(BaseUpdateLogic::containerNotFound);
-
-        return isContainerEquals(actualContainer, desiredContainer);
-    }
-
-    private Optional<UpdateControl<Keycloak>> hashEqualityCheck(String currentHash, String storedHash) {
-        if (Objects.equals(currentHash, storedHash)) {
-            Log.debug("Hash is equals - skipping update logic");
-            return Optional.empty();
-        }
-        Log.debugf("Hash changed detected - current: %s, stored: %s", currentHash, storedHash);
-        return onUpdate();
-    }
-
-    private Optional<UpdateControl<Keycloak>> containerEqualityCheck() {
-        if (isContainerEquals()) {
-            // container is equals, no update required
-            Log.debug("No changes detected in the container - skipping update logic");
-            return Optional.empty();
-        }
-
-        return onUpdate();
-    }
 
     private void copyStatusFromExistStatefulSet(StatefulSet current) {
         var maybeRecreate = CRDUtils.fetchIsRecreateUpdate(current);
