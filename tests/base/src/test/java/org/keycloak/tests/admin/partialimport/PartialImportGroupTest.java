@@ -47,4 +47,10 @@ public class PartialImportGroupTest extends AbstractPartialImportTest {
         addGroups();
         testOverwrite();
     }
+
+    @Test
+    public void testAddSingleGroupOverwrite() {
+        addGroups(1);
+        testOverwrite(1);
+    }
 }
