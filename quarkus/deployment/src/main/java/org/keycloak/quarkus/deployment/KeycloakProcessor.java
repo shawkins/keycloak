@@ -1089,8 +1089,20 @@ class KeycloakProcessor {
 
         List<ScriptProviderDescriptor> descriptors = new ArrayList<>();
 
-        try (JarFile jarFile = new JarFile(file.substring("file:".length(), file.indexOf(JAR_FILE_SEPARATOR)))) {
+        String jarFilePath = file.substring("file:".length(), file.indexOf(JAR_FILE_SEPARATOR));
+        try {
+            // Use URI to properly decode the path
+            jarFilePath = new java.net.URI(jarFilePath).getPath();
+        } catch (java.net.URISyntaxException e) {
+            logger.warnf("Failed to decode JAR file path, using raw path: %s - %s", jarFilePath, e.getMessage());
+        }
+
+        try (JarFile jarFile = new JarFile(jarFilePath)) {
             JarEntry descriptorEntry = jarFile.getJarEntry(KEYCLOAK_SCRIPTS_JSON_PATH);
+
+            if (descriptorEntry == null) {
+                return descriptors;
+            }
 
             try (InputStream is = jarFile.getInputStream(descriptorEntry)) {
                 ScriptProviderDescriptor descriptor = JsonSerialization.readValue(is, ScriptProviderDescriptor.class);
