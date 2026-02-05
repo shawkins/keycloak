@@ -1040,7 +1040,7 @@ class KeycloakProcessor {
                         }
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException | URISyntaxException e) {
                 throw new RuntimeException("Failed to discover script providers", e);
             }
         }
@@ -1080,8 +1080,8 @@ class KeycloakProcessor {
         return descriptors;
     }
 
-    private List<ScriptProviderDescriptor> getScriptProviderDescriptorsFromJarFile(URL url) throws IOException {
-        String file = url.getFile();
+    private List<ScriptProviderDescriptor> getScriptProviderDescriptorsFromJarFile(URL url) throws IOException, URISyntaxException {
+        String file = url.toURI().getSchemeSpecificPart();
 
         if (!file.contains(JAR_FILE_SEPARATOR)) {
             return List.of();
@@ -1089,15 +1089,7 @@ class KeycloakProcessor {
 
         List<ScriptProviderDescriptor> descriptors = new ArrayList<>();
 
-        String jarFilePath = file.substring("file:".length(), file.indexOf(JAR_FILE_SEPARATOR));
-        try {
-            // Use URI to properly decode the path
-            jarFilePath = jarFilePath.toURI().getSchemeSpecificPart();
-        } catch (java.net.URISyntaxException e) {
-            logger.warnf("Failed to decode JAR file path, using raw path: %s - %s", jarFilePath, e.getMessage());
-        }
-
-        try (JarFile jarFile = new JarFile(jarFilePath)) {
+        try (JarFile jarFile = new JarFile(file.substring("file:".length(), file.indexOf(JAR_FILE_SEPARATOR)))) {
             JarEntry descriptorEntry = jarFile.getJarEntry(KEYCLOAK_SCRIPTS_JSON_PATH);
 
             if (descriptorEntry == null) {
