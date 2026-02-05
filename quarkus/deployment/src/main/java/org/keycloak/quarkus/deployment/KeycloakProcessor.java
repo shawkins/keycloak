@@ -1092,7 +1092,7 @@ class KeycloakProcessor {
         String jarFilePath = file.substring("file:".length(), file.indexOf(JAR_FILE_SEPARATOR));
         try {
             // Use URI to properly decode the path
-            jarFilePath = new java.net.URI(jarFilePath).getPath();
+            jarFilePath = jarFilePath.toURI().getSchemeSpecificPart();
         } catch (java.net.URISyntaxException e) {
             logger.warnf("Failed to decode JAR file path, using raw path: %s - %s", jarFilePath, e.getMessage());
         }
