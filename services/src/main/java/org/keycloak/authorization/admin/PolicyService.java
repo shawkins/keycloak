@@ -129,11 +129,9 @@ public class PolicyService {
         AbstractPolicyRepresentation representation = doCreateRepresentation(payload);
         Policy policy = create(representation);
 
-        representation.setId(policy.getId());
-
         audit(representation, representation.getId(), OperationType.CREATE, authorization.getKeycloakSession());
 
-        return Response.status(Status.CREATED).entity(representation).build();
+        return Response.status(Status.CREATED).entity(toRepresentation(policy, null, authorization)).build();
     }
 
     protected AbstractPolicyRepresentation doCreateRepresentation(String payload) {

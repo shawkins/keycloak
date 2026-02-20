@@ -1200,6 +1200,10 @@ public class ModelToRepresentation {
                     resource -> toRepresentation(resource)).collect(Collectors.toSet()));
         }
 
+        policy.getScopes().stream().map(Scope::getName).forEach(representation::addScope);
+        policy.getAssociatedPolicies().stream().map(Policy::getName).forEach(representation::addPolicy);
+        policy.getResources().stream().map(Resource::getName).forEach(representation::addResource);
+
         return representation;
     }
 

@@ -84,6 +84,9 @@ public abstract class AbstractPermissionTest {
             if (Response.Status.CREATED.equals(expected)) {
                 ScopePermissionRepresentation created = getScopePermissionsResource(client).findByName(permission.getName());
                 assertNotNull(created);
+                assertEquals(permission.getScopes().size(), created.getScopes().size());
+                assertEquals(permission.getResources().size(), created.getResources().size());
+                assertEquals(permission.getPolicies().size(), created.getPolicies().size());
                 permission.setId(created.getId());
             }
         }
