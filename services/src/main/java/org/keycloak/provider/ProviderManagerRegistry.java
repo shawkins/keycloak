@@ -19,7 +19,10 @@ package org.keycloak.provider;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Optional;
+
+import org.keycloak.services.DefaultProviderManagerDeployer;
+import org.keycloak.services.resources.KeycloakApplication;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -28,11 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ProviderManagerRegistry {
     public static final ProviderManagerRegistry SINGLETON = new ProviderManagerRegistry();
     protected List<ProviderManager> preBoot = Collections.synchronizedList(new LinkedList<>());
-    protected AtomicReference<ProviderManagerDeployer> deployerRef = new AtomicReference<>();
-
-    public synchronized void setDeployer(ProviderManagerDeployer deployer) {
-        this.deployerRef.set(deployer);
-    }
 
     public synchronized void deploy(ProviderManager pm) {
         ProviderManagerDeployer deployer = getDeployer();
@@ -53,7 +51,8 @@ public class ProviderManagerRegistry {
     }
 
     private ProviderManagerDeployer getDeployer() {
-        return deployerRef.get();
+        return Optional.ofNullable(KeycloakApplication.getSessionFactory()).map(DefaultProviderManagerDeployer::new)
+                .orElse(null);
     }
 
     public List<ProviderManager> getPreBoot() {

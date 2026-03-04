@@ -215,7 +215,7 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         undertow.deploy(di);
         sessionFactory = (DefaultKeycloakSessionFactory) KeycloakApplication.getSessionFactory();
 
-        registerScriptProviders(sessionFactory);
+        registerScriptProviders();
 
         setupDevConfig();
 

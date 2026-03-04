@@ -17,14 +17,56 @@
 
 package org.keycloak.services.resteasy;
 
+import java.util.Map;
+
+import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.provider.KeycloakDeploymentInfo;
+import org.keycloak.provider.Provider;
+import org.keycloak.provider.ProviderFactory;
+import org.keycloak.provider.ProviderManager;
+import org.keycloak.provider.ProviderManagerRegistry;
+import org.keycloak.provider.Spi;
 import org.keycloak.services.DefaultKeycloakSessionFactory;
+import org.keycloak.services.resources.admin.fgap.AdminPermissions;
 
 public class ResteasyKeycloakSessionFactory extends DefaultKeycloakSessionFactory {
 
     @Override
     public KeycloakSession create() {
         return new ResteasyKeycloakSession(this);
+    }
+
+    @Override
+    public void init() {
+        serverStartupTimestamp = System.currentTimeMillis();
+
+        ProviderManager pm = new ProviderManager(KeycloakDeploymentInfo.create().services(), getClass().getClassLoader(), Config.scope().getArray("providers"));
+        for (Spi spi : pm.loadSpis()) {
+            if (spi.isEnabled()) {
+                spis.add(spi);
+            }
+        }
+
+        factoriesMap = loadFactories(pm);
+
+        synchronized (ProviderManagerRegistry.SINGLETON) {
+            for (ProviderManager manager : ProviderManagerRegistry.SINGLETON.getPreBoot()) {
+                Map<Class<? extends Provider>, Map<String, ProviderFactory>> factoryMap = loadFactories(manager);
+                for (Map.Entry<Class<? extends Provider>, Map<String, ProviderFactory>> entry : factoryMap.entrySet()) {
+                    Map<String, ProviderFactory> factories = factoriesMap.get(entry.getKey());
+                    if (factories == null) {
+                        factoriesMap.put(entry.getKey(), entry.getValue());
+                    } else {
+                        factories.putAll(entry.getValue());
+                    }
+                }
+            }
+            checkProvider();
+            initProviderFactories();
+        }
+
+        AdminPermissions.registerListener(this);
     }
 
 }

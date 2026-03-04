@@ -59,6 +59,7 @@ import org.keycloak.protocol.saml.mappers.DeployedScriptSAMLProtocolMapper;
 import org.keycloak.provider.KeycloakDeploymentInfo;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.ProviderManager;
+import org.keycloak.provider.ProviderManagerRegistry;
 import org.keycloak.provider.Spi;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.provider.ScriptProviderDescriptor;
@@ -327,11 +328,13 @@ public class KeycloakServer {
 
           if (tmpDataDir.mkdirs()) {
             tmpDataDir.deleteOnExit();
-          } else try (Stream<Path> dir = Files.list(tmpDataDir.toPath())) {
-            if (dir.findAny().isPresent()) {    // Works well if directory is empty
-              throw new IOException("Could not create directory " + tmpDataDir);
-            }
-          }
+          } else {
+            try (Stream<Path> dir = Files.list(tmpDataDir.toPath())) {
+                if (dir.findAny().isPresent()) {    // Works well if directory is empty
+                  throw new IOException("Could not create directory " + tmpDataDir);
+                }
+              }
+        }
 
           dataPath = tmpDataDir.getAbsolutePath();
         } catch (IOException ioe){
@@ -459,7 +462,7 @@ public class KeycloakServer {
 
             sessionFactory = (DefaultKeycloakSessionFactory) KeycloakApplication.getSessionFactory();
 
-            registerScriptProviders(sessionFactory);
+            registerScriptProviders();
 
             setupDevConfig();
 
@@ -591,7 +594,7 @@ public class KeycloakServer {
         }
     }
 
-    public static void registerScriptProviders(DefaultKeycloakSessionFactory sessionFactory) {
+    public static void registerScriptProviders() {
         InputStream scriptProviderStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/keycloak-scripts.json");
 
         if (scriptProviderStream != null) {
@@ -619,7 +622,7 @@ public class KeycloakServer {
                     PolicySpi.class,
                     DeployedScriptPolicyFactory::new);
 
-            sessionFactory.deploy(new ProviderManager(info, Thread.currentThread().getContextClassLoader()));
+            ProviderManagerRegistry.SINGLETON.deploy(new ProviderManager(info, Thread.currentThread().getContextClassLoader()));
         }
     }
 

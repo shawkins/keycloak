@@ -29,6 +29,7 @@ import org.keycloak.provider.ProviderManagerRegistry;
 import org.keycloak.provider.Spi;
 import org.keycloak.quarkus.runtime.themes.QuarkusJarThemeProviderFactory;
 import org.keycloak.services.DefaultKeycloakSessionFactory;
+import org.keycloak.services.DefaultProviderManagerDeployer;
 import org.keycloak.services.resources.admin.fgap.AdminPermissions;
 import org.keycloak.theme.ClasspathThemeProviderFactory;
 
@@ -55,7 +56,7 @@ public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionF
             List<ClasspathThemeProviderFactory.ThemesRepresentation> themes) {
         this.provider = defaultProviders;
         serverStartupTimestamp = System.currentTimeMillis();
-        spis = factories.keySet();
+        spis.addAll(factories.keySet());
 
         for (Spi spi : spis) {
             for (Map<String, Class<? extends ProviderFactory>> factoryClazz : factories.get(spi).values()) {
@@ -86,8 +87,6 @@ public final class QuarkusKeycloakSessionFactory extends DefaultKeycloakSessionF
     public void init() {
         initProviderFactories();
         AdminPermissions.registerListener(this);
-        // make the session factory ready for hot deployment
-        ProviderManagerRegistry.SINGLETON.setDeployer(this);
     }
 
     private ProviderFactory lookupProviderFactory(Class<? extends ProviderFactory> factoryClazz) {

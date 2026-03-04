@@ -22,12 +22,12 @@ import jakarta.ws.rs.ApplicationPath;
 
 import org.keycloak.config.BootstrapAdminOptions;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.quarkus.runtime.Environment;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvider;
 import org.keycloak.quarkus.runtime.configuration.PropertyMappingInterceptor;
 import org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory;
+import org.keycloak.services.DefaultKeycloakSessionFactory;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.ApplianceBootstrap;
 import org.keycloak.services.resources.KeycloakApplication;
@@ -70,7 +70,7 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
     }
 
     @Override
-    public KeycloakSessionFactory createSessionFactory() {
+    public DefaultKeycloakSessionFactory createSessionFactory() {
         QuarkusKeycloakSessionFactory instance = QuarkusKeycloakSessionFactory.getInstance();
         instance.init();
         return instance;
