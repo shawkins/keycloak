@@ -19,6 +19,11 @@ package org.keycloak.quarkus.runtime.cli;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -32,8 +37,11 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.keycloak.common.profile.ProfileException;
+import org.keycloak.common.util.Base64Url;
 import org.keycloak.config.DeprecatedMetadata;
 import org.keycloak.config.Option;
 import org.keycloak.config.OptionCategory;
@@ -63,6 +71,7 @@ import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
+import org.apache.commons.io.FileUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.DuplicateOptionAnnotationsException;
 import picocli.CommandLine.Help.Ansi;
@@ -918,8 +927,46 @@ public class Picocli {
     }
 
     public void build() throws Throwable {
+        if (!Configuration.getRawPersistedProperties().isEmpty()
+                && !Environment.getDataDir().isEmpty()
+                && !Environment.getHomeDir().isEmpty()) {
+
+            Path quarkusDir = Path.of(Environment.getHomeDir().orElseThrow(), "lib/quarkus");
+            if (Files.exists(quarkusDir)) {
+                Path existingAugmentationDir = getAugmentationDir(Configuration.getRawPersistedProperties().entrySet().stream());
+
+                if (!Files.exists(existingAugmentationDir)) {
+                    System.out.println("Saving augmentation");
+                    FileUtils.copyDirectory(quarkusDir.toFile(), existingAugmentationDir.toFile());
+                }
+
+                Path newAugmentationDir = getAugmentationDir(getNonPersistedBuildTimeOptions().entrySet().stream().map(e -> Map.entry(e.getKey().toString(), e.getValue().toString())));
+
+                if (Files.exists(newAugmentationDir)) {
+                    FileUtils.copyDirectory(newAugmentationDir.toFile(), quarkusDir.toFile());
+                    System.out.println("Reusing augmentation");
+                    return;
+                }
+            }
+        }
+
         Environment.setRebuild();
         QuarkusEntryPoint.main();
+    }
+
+    private Path getAugmentationDir(Stream<Map.Entry<String, String>> props) {
+        String key = props
+                .filter(e -> !isIgnoredPersistedOption(e.getKey()))
+                .sorted((e1, e2) -> e1.getKey().compareTo(e2.getKey()))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue)).toString();
+
+        try {
+             key = Base64Url.encode(MessageDigest.getInstance("SHA-256").digest(key.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        return Path.of(Environment.getDataDir().orElseThrow(), "augmentations", key);
     }
 
     public void initConfig(AbstractCommand command) {
