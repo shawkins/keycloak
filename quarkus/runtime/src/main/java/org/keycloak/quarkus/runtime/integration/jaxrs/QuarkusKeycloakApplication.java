@@ -65,6 +65,11 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
 
     void onStartupEvent(@Observes StartupEvent event) {
         startup();
+
+        if (Boolean.getBoolean("init_db_only")) {
+            System.out.println("early exit");
+            Quarkus.asyncExit(0); // used during the maven build to create a pre-initialized h2 db
+        }
     }
 
     void onShutdownEvent(@Observes ShutdownEvent event) {

@@ -96,6 +96,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>../../quarkus/server/target/kc/data/h2</directory>
+            <outputDirectory>data/h2</outputDirectory>
+            <includes>
+                <include>**/**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>../../</directory>
             <outputDirectory></outputDirectory>
             <includes>

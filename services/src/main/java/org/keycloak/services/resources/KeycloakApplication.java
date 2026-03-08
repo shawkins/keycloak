@@ -83,6 +83,10 @@ public abstract class KeycloakApplication extends Application {
         CryptoIntegration.init(KeycloakApplication.class.getClassLoader());
         KeycloakApplication.sessionFactory = createSessionFactory();
 
+        if (Boolean.getBoolean("init_db_only")) {
+            return; // used during the maven build to create a pre-initialized h2 db
+        }
+
         setTransactionTimeout();
         var exportImportManager = KeycloakModelUtils.runJobInTransactionWithResult(sessionFactory, session -> {
             DBLockManager dbLockManager = new DBLockManager(session);
