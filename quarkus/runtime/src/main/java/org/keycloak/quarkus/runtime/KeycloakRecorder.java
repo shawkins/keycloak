@@ -58,8 +58,10 @@ import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import liquibase.Scope;
 import liquibase.servicelocator.ServiceLocator;
@@ -99,6 +101,15 @@ public class KeycloakRecorder {
             new ManagementInterfaceItem("/openapi", "OpenAPI specification", () -> Configuration.isTrue(OpenApiOptions.OPENAPI_ENABLED)),
             new ManagementInterfaceItem("/openapi/ui", "OpenAPI UI specification (Swagger)", () -> Configuration.isTrue(OpenApiOptions.OPENAPI_UI_ENABLED))
     );
+
+    /*public Handler<RoutingContext> getRootHandler() {
+        return context -> VertxHttpRecorder.getRootHandler().handle(context.request());
+    }*/
+
+    public void mountMainRouter(RuntimeValue<Router> mainRouter, RuntimeValue<Router> frameworkRouter,
+            String mainPath) {
+        frameworkRouter.getValue().mountSubRouter(mainPath, mainRouter.getValue());
+    }
 
     // default handler for the management interface
     public Handler<RoutingContext> getManagementHandler() {
