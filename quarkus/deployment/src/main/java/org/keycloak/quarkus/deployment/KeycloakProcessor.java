@@ -161,6 +161,8 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.ManagementInterfaceFilterBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.health.Readiness;
@@ -961,6 +963,17 @@ class KeycloakProcessor {
                 .map(ServiceLoader.Provider::get)
                 .toList();
         recorder.configureProtoStreamSchemas(schemas);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void updateManagmentRouter(ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+            VertxWebRouterBuildItem vertxWebRouterBuildItem, VertxWebRouterBuildItem httpRouteRouter,
+            KeycloakRecorder recorder) {
+        if (managementBuildTimeConfig.enabled()) {
+            recorder.mountMainRouter(vertxWebRouterBuildItem.getHttpRouter(),
+                    vertxWebRouterBuildItem.getManagementRouter(), "/");
+        }
     }
 
     private Map<Spi, Map<Class<? extends Provider>, Map<String, ProviderFactory>>> loadFactories(
