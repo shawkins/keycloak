@@ -29,7 +29,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -441,22 +443,30 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
                 });
             }
         }
-        nodes.values().forEach(this::closeProvider);
+        try {
+            // wait for all to complete
+            CompletableFuture.allOf(nodes.values().stream().map(this::closeProvider).toArray(CompletableFuture[]::new)).get();
+        } catch (InterruptedException | ExecutionException e) {
+            // TODO
+        }
     }
 
-    private void closeProvider(Node<Set<ProviderFactory>> node) {
+    private CompletableFuture<?> closeProvider(Node<Set<ProviderFactory>> node) {
+        List<CompletableFuture<?>> toClose = new ArrayList<>();
         for (var it = node.children.iterator(); it.hasNext(); ) {
-            closeProvider(it.next());
+            toClose.add(closeProvider(it.next()).toCompletableFuture());
             it.remove();
         }
 
-        // Provider has no other dependent ProviderFactories, it's ProviderFactories can safely be closed
+        CompletableFuture<?> closeFuture = CompletableFuture.allOf(toClose.toArray(CompletableFuture[]::new));
+        // Provider has no other dependent ProviderFactories, its ProviderFactories can safely be closed
         for (var it = node.data.iterator(); it.hasNext(); ) {
             ProviderFactory pf = it.next();
             logger.debugf("Closing ProviderFactory: %s", pf.getClass().getName());
-            pf.close();
+            closeFuture = closeFuture.thenCompose(ignored -> pf.closeAsync());
             it.remove();
         }
+        return closeFuture;
     }
 
     private static class Node<T> {

@@ -20,6 +20,8 @@ package org.keycloak.provider;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
@@ -79,5 +81,10 @@ public interface ProviderFactory<T extends Provider> {
      */
     default Set<Class<? extends Provider>> dependsOn() {
         return Collections.emptySet();
+    }
+
+    default CompletionStage<?> closeAsync() {
+        close();
+        return CompletableFuture.completedFuture(null);
     }
 }
