@@ -17,8 +17,6 @@
 
 package org.keycloak.representations.admin.v2;
 
-import java.util.Objects;
-
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -30,167 +28,138 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public class SAMLClientRepresentation extends BaseClientRepresentation {
     public static final String PROTOCOL = "saml";
 
-    @JsonPropertyDescription("Name ID format to use for the subject (e.g., 'username', 'email', 'transient', 'persistent')")
-    private String nameIdFormat;
+    public static final String NAME_ID_FORMAT_FIELD = "nameIdFormat";
+    public static final String FORCE_NAME_ID_FORMAT_FIELD = "forceNameIdFormat";
+    public static final String INCLUDE_AUTHN_STATEMENT_FIELD = "includeAuthnStatement";
+    public static final String SIGN_DOCUMENTS_FIELD = "signDocuments";
+    public static final String SIGN_ASSERTIONS_FIELD = "signAssertions";
+    public static final String CLIENT_SIGNATURE_REQUIRED_FIELD = "clientSignatureRequired";
+    public static final String FORCE_POST_BINDING_FIELD = "forcePostBinding";
+    public static final String FRONT_CHANNEL_LOGOUT_FIELD = "frontChannelLogout";
+    public static final String SIGNATURE_ALGORITHM_FIELD = "signatureAlgorithm";
+    public static final String SIGNATURE_CANONICALIZATION_METHOD_FIELD = "signatureCanonicalizationMethod";
+    public static final String SIGNING_CERTIFICATE_FIELD = "signingCertificate";
+    public static final String ALLOW_ECP_FLOW_FIELD = "allowEcpFlow";
 
-    @JsonPropertyDescription("Force the specified Name ID format even if the client requests a different one")
-    private Boolean forceNameIdFormat;
+    public SAMLClientRepresentation() {
 
-    @JsonPropertyDescription("Include AuthnStatement in the SAML response")
-    private Boolean includeAuthnStatement;
+    }
 
-    @JsonPropertyDescription("Sign SAML documents on the server side")
-    private Boolean signDocuments;
-
-    @JsonPropertyDescription("Sign SAML assertions")
-    private Boolean signAssertions;
-
-    @JsonPropertyDescription("Require client to sign SAML requests")
-    private Boolean clientSignatureRequired;
-
-    @JsonPropertyDescription("Force POST binding for SAML responses")
-    private Boolean forcePostBinding;
-
-    @JsonPropertyDescription("Use front-channel logout (browser redirect)")
-    private Boolean frontChannelLogout;
-
-    @JsonPropertyDescription("Signature algorithm for signing SAML documents (e.g., 'RSA_SHA256', 'RSA_SHA512')")
-    private String signatureAlgorithm;
-
-    @JsonPropertyDescription("Canonicalization method for XML signatures")
-    private String signatureCanonicalizationMethod;
-
-    @JsonPropertyDescription("X.509 certificate for signing (PEM format, without headers)")
-    private String signingCertificate;
-
-    @JsonPropertyDescription("Allow ECP (Enhanced Client or Proxy) flow")
-    private Boolean allowEcpFlow;
+    public SAMLClientRepresentation(FieldMapper mapper) {
+        super(mapper);
+    }
 
     @Override
     public String getProtocol() {
         return PROTOCOL;
     }
 
+    @JsonPropertyDescription("Name ID format to use for the subject (e.g., 'username', 'email', 'transient', 'persistent')")
     public String getNameIdFormat() {
-        return nameIdFormat;
+        return this.mapper.get(NAME_ID_FORMAT_FIELD);
     }
 
     public void setNameIdFormat(String nameIdFormat) {
-        this.nameIdFormat = nameIdFormat;
+        this.mapper.set(NAME_ID_FORMAT_FIELD, nameIdFormat);
     }
 
+    @JsonPropertyDescription("Force the specified Name ID format even if the client requests a different one")
     public Boolean getForceNameIdFormat() {
-        return forceNameIdFormat;
+        return this.mapper.get(FORCE_NAME_ID_FORMAT_FIELD);
     }
 
     public void setForceNameIdFormat(Boolean forceNameIdFormat) {
-        this.forceNameIdFormat = forceNameIdFormat;
+        this.mapper.set(FORCE_NAME_ID_FORMAT_FIELD, forceNameIdFormat);
     }
 
+    @JsonPropertyDescription("Include AuthnStatement in the SAML response")
     public Boolean getIncludeAuthnStatement() {
-        return includeAuthnStatement;
+        return this.mapper.get(INCLUDE_AUTHN_STATEMENT_FIELD);
     }
 
     public void setIncludeAuthnStatement(Boolean includeAuthnStatement) {
-        this.includeAuthnStatement = includeAuthnStatement;
+        this.mapper.set(INCLUDE_AUTHN_STATEMENT_FIELD, includeAuthnStatement);
     }
 
+    @JsonPropertyDescription("Sign SAML documents on the server side")
     public Boolean getSignDocuments() {
-        return signDocuments;
+        return this.mapper.get(SIGN_DOCUMENTS_FIELD);
     }
 
     public void setSignDocuments(Boolean signDocuments) {
-        this.signDocuments = signDocuments;
+        this.mapper.set(SIGN_DOCUMENTS_FIELD, signDocuments);
     }
 
+    @JsonPropertyDescription("Sign SAML assertions")
     public Boolean getSignAssertions() {
-        return signAssertions;
+        return this.mapper.get(SIGN_ASSERTIONS_FIELD);
     }
 
     public void setSignAssertions(Boolean signAssertions) {
-        this.signAssertions = signAssertions;
+        this.mapper.set(SIGN_ASSERTIONS_FIELD, signAssertions);
     }
 
+    @JsonPropertyDescription("Require client to sign SAML requests")
     public Boolean getClientSignatureRequired() {
-        return clientSignatureRequired;
+        return this.mapper.get(CLIENT_SIGNATURE_REQUIRED_FIELD);
     }
 
     public void setClientSignatureRequired(Boolean clientSignatureRequired) {
-        this.clientSignatureRequired = clientSignatureRequired;
+        this.mapper.set(CLIENT_SIGNATURE_REQUIRED_FIELD, clientSignatureRequired);
     }
 
+    @JsonPropertyDescription("Force POST binding for SAML responses")
     public Boolean getForcePostBinding() {
-        return forcePostBinding;
+        return this.mapper.get(FORCE_POST_BINDING_FIELD);
     }
 
     public void setForcePostBinding(Boolean forcePostBinding) {
-        this.forcePostBinding = forcePostBinding;
+        this.mapper.set(FORCE_POST_BINDING_FIELD, forcePostBinding);
     }
 
+    @JsonPropertyDescription("Use front-channel logout (browser redirect)")
     public Boolean getFrontChannelLogout() {
-        return frontChannelLogout;
+        return this.mapper.get(FRONT_CHANNEL_LOGOUT_FIELD);
     }
 
     public void setFrontChannelLogout(Boolean frontChannelLogout) {
-        this.frontChannelLogout = frontChannelLogout;
+        this.mapper.set(FRONT_CHANNEL_LOGOUT_FIELD, frontChannelLogout);
     }
 
+    @JsonPropertyDescription("Signature algorithm for signing SAML documents (e.g., 'RSA_SHA256', 'RSA_SHA512')")
     public String getSignatureAlgorithm() {
-        return signatureAlgorithm;
+        return this.mapper.get(SIGNATURE_ALGORITHM_FIELD);
     }
 
     public void setSignatureAlgorithm(String signatureAlgorithm) {
-        this.signatureAlgorithm = signatureAlgorithm;
+        this.mapper.set(SIGNATURE_ALGORITHM_FIELD, signatureAlgorithm);
     }
 
+    @JsonPropertyDescription("Canonicalization method for XML signatures")
     public String getSignatureCanonicalizationMethod() {
-        return signatureCanonicalizationMethod;
+        return this.mapper.get(SIGNATURE_CANONICALIZATION_METHOD_FIELD);
     }
 
     public void setSignatureCanonicalizationMethod(String signatureCanonicalizationMethod) {
-        this.signatureCanonicalizationMethod = signatureCanonicalizationMethod;
+        this.mapper.set(SIGNATURE_CANONICALIZATION_METHOD_FIELD, signatureCanonicalizationMethod);
     }
 
+    @JsonPropertyDescription("X.509 certificate for signing (PEM format, without headers)")
     public String getSigningCertificate() {
-        return signingCertificate;
+        return this.mapper.get(SIGNING_CERTIFICATE_FIELD);
     }
 
     public void setSigningCertificate(String signingCertificate) {
-        this.signingCertificate = signingCertificate;
+        this.mapper.set(SIGNING_CERTIFICATE_FIELD, signingCertificate);
     }
 
+    @JsonPropertyDescription("Allow ECP (Enhanced Client or Proxy) flow")
     public Boolean getAllowEcpFlow() {
-        return allowEcpFlow;
+        return this.mapper.get(ALLOW_ECP_FLOW_FIELD);
     }
 
     public void setAllowEcpFlow(Boolean allowEcpFlow) {
-        this.allowEcpFlow = allowEcpFlow;
+        this.mapper.set(ALLOW_ECP_FLOW_FIELD, allowEcpFlow);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof SAMLClientRepresentation)) return false;
-        if (!super.equals(o)) return false;
-        SAMLClientRepresentation that = (SAMLClientRepresentation)o;
-        return Objects.equals(nameIdFormat, that.nameIdFormat) 
-                && Objects.equals(forceNameIdFormat, that.forceNameIdFormat) 
-                && Objects.equals(includeAuthnStatement, that.includeAuthnStatement) 
-                && Objects.equals(signDocuments, that.signDocuments) 
-                && Objects.equals(signAssertions, that.signAssertions) 
-                && Objects.equals(clientSignatureRequired, that.clientSignatureRequired) 
-                && Objects.equals(forcePostBinding, that.forcePostBinding) 
-                && Objects.equals(frontChannelLogout, that.frontChannelLogout) 
-                && Objects.equals(signatureAlgorithm, that.signatureAlgorithm) 
-                && Objects.equals(signatureCanonicalizationMethod, that.signatureCanonicalizationMethod) 
-                && Objects.equals(signingCertificate, that.signingCertificate) 
-                && Objects.equals(allowEcpFlow, that.allowEcpFlow);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), nameIdFormat, forceNameIdFormat, includeAuthnStatement, 
-                signDocuments, signAssertions, clientSignatureRequired, forcePostBinding, 
-                frontChannelLogout, signatureAlgorithm, signatureCanonicalizationMethod, 
-                signingCertificate, allowEcpFlow);
-    }
 }

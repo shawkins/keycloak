@@ -99,6 +99,10 @@ public class ClientApiV2Test extends AbstractClientApiV2Test{
 
     @InjectClient(realmRef = "master")
     ManagedClient testClient;
+    
+    static {
+        System.setProperty("kc.test.server", "embedded");
+    }
 
     @Test
     public void getClient() {

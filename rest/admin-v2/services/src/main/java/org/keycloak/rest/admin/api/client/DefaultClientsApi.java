@@ -1,14 +1,7 @@
 package org.keycloak.rest.admin.api.client;
 
+import java.util.Set;
 import java.util.stream.Stream;
-
-import jakarta.annotation.Nonnull;
-import jakarta.validation.Valid;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.Response;
 
 import org.keycloak.admin.api.client.ClientApi;
 import org.keycloak.admin.api.client.ClientsApi;
@@ -20,7 +13,16 @@ import org.keycloak.services.client.DefaultClientService;
 import org.keycloak.services.resources.admin.RealmAdminResource;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+import jakarta.annotation.Nonnull;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
+
 public class DefaultClientsApi implements ClientsApi {
+    
     private final KeycloakSession session;
     private final AdminPermissionEvaluator permissions;
     private final RealmModel realm;
@@ -44,7 +46,18 @@ public class DefaultClientsApi implements ClientsApi {
     @GET
     @Override
     public Stream<BaseClientRepresentation> getClients() {
-        return clientService.getClients(realm);
+        // TODO: accept a set of fields to emit
+        Set<String> fields = Set.of("clientId");
+        // TODO: validate that the fields are acceptable - overlaps with query validation logic
+        //  we need a static or generated set of fields mapped to accessors / setters
+        
+        // demonstrates a "catch all" approach
+        // filter via jackson serialization - this could be controversial so it may only be for rapid prototyping, it also seems only to understand for top-level fields
+        //ObjectMapperResolver.setPropertyFilter(SimpleBeanPropertyFilter.filterOutAllExcept(fields));
+         
+        // pass the fields to the server, then expand the RepModelMapper.fromModel to accept the fields / accessors
+        
+        return clientService.getClients(realm, null, null, null);
     }
 
     @POST

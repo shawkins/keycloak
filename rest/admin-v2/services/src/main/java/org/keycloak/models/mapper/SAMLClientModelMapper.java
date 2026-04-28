@@ -18,13 +18,14 @@
 package org.keycloak.models.mapper;
 
 import org.keycloak.models.ClientModel;
-import org.keycloak.models.KeycloakSession;
+import org.keycloak.representations.admin.v2.BaseClientRepresentation;
+import org.keycloak.representations.admin.v2.FieldMapper;
 import org.keycloak.representations.admin.v2.SAMLClientRepresentation;
 
 /**
  * Mapper for SAML clients between model and representation.
  */
-public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepresentation> {
+public class SAMLClientModelMapper extends BaseClientModelMapper {
 
     // SAML attribute keys
     private static final String SAML_NAME_ID_FORMAT = "saml_name_id_format";
@@ -39,63 +40,43 @@ public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepre
     private static final String SAML_SIGNING_CERTIFICATE = "saml.signing.certificate";
     private static final String SAML_ALLOW_ECP_FLOW = "saml.allow.ecp.flow";
 
-    public SAMLClientModelMapper(KeycloakSession session) {
-        super(session);
-    }
-
     @Override
-    protected SAMLClientRepresentation createClientRepresentation() {
-        return new SAMLClientRepresentation();
+    protected SAMLClientRepresentation createClientRepresentation(FieldMapper mapper) {
+        return new SAMLClientRepresentation(mapper);
     }
-
-    @Override
-    protected void fromModelSpecific(ClientModel model, SAMLClientRepresentation rep) {
+    
+    protected void addBooleanAttributeMapping(String name, String attribute) {
+        this.addMapping(name, model -> getBooleanAttribute(model, attribute), (model, value) -> setBooleanAttributeIfNotNull(model, attribute, value));
+    }
+    
+    protected void addAttributeMapping(String name, String attribute) {
+        this.addMapping(name, model -> model.getAttribute(attribute), (model, value) -> setAttributeIfNotNull(model, attribute, value));
+    }
+    
+    public SAMLClientModelMapper() {
+        // TODO: protocol may need to be a proper field
+        addMapping(BaseClientRepresentation.DISCRIMINATOR_FIELD, null, (model, protocol) -> model.setProtocol((String)protocol));
+        
         // Name ID settings
-        rep.setNameIdFormat(model.getAttribute(SAML_NAME_ID_FORMAT));
-        rep.setForceNameIdFormat(getBooleanAttribute(model, SAML_FORCE_NAME_ID_FORMAT));
-
+        addAttributeMapping(SAMLClientRepresentation.NAME_ID_FORMAT_FIELD, SAML_NAME_ID_FORMAT);
+        addBooleanAttributeMapping(SAMLClientRepresentation.FORCE_NAME_ID_FORMAT_FIELD, SAML_FORCE_NAME_ID_FORMAT);
+        
         // Signature settings
-        rep.setIncludeAuthnStatement(getBooleanAttribute(model, SAML_AUTHN_STATEMENT));
-        rep.setSignDocuments(getBooleanAttribute(model, SAML_SERVER_SIGNATURE));
-        rep.setSignAssertions(getBooleanAttribute(model, SAML_ASSERTION_SIGNATURE));
-        rep.setClientSignatureRequired(getBooleanAttribute(model, SAML_CLIENT_SIGNATURE));
-        rep.setSignatureAlgorithm(model.getAttribute(SAML_SIGNATURE_ALGORITHM));
-        rep.setSignatureCanonicalizationMethod(model.getAttribute(SAML_SIGNATURE_CANONICALIZATION));
-        rep.setSigningCertificate(model.getAttribute(SAML_SIGNING_CERTIFICATE));
+        addBooleanAttributeMapping(SAMLClientRepresentation.INCLUDE_AUTHN_STATEMENT_FIELD, SAML_AUTHN_STATEMENT);
+        addBooleanAttributeMapping(SAMLClientRepresentation.SIGN_DOCUMENTS_FIELD, SAML_SERVER_SIGNATURE);
+        addBooleanAttributeMapping(SAMLClientRepresentation.SIGN_ASSERTIONS_FIELD, SAML_ASSERTION_SIGNATURE);
+        addBooleanAttributeMapping(SAMLClientRepresentation.CLIENT_SIGNATURE_REQUIRED_FIELD, SAML_CLIENT_SIGNATURE);
+        addAttributeMapping(SAMLClientRepresentation.SIGNATURE_ALGORITHM_FIELD, SAML_SIGNATURE_ALGORITHM);
+        addAttributeMapping(SAMLClientRepresentation.SIGNATURE_CANONICALIZATION_METHOD_FIELD, SAML_SIGNATURE_CANONICALIZATION);
+        addAttributeMapping(SAMLClientRepresentation.SIGNING_CERTIFICATE_FIELD, SAML_SIGNING_CERTIFICATE);
 
         // Binding and logout settings
-        rep.setForcePostBinding(getBooleanAttribute(model, SAML_FORCE_POST_BINDING));
-        rep.setFrontChannelLogout(model.isFrontchannelLogout());
+        addBooleanAttributeMapping(SAMLClientRepresentation.FORCE_POST_BINDING_FIELD, SAML_FORCE_POST_BINDING);
+        // TODO: mapping from 3 value to 2 value boolean can be confusing from a patching perspective
+        addMapping(SAMLClientRepresentation.FRONT_CHANNEL_LOGOUT_FIELD, ClientModel::isFrontchannelLogout, (model, logout) -> model.setFrontchannelLogout(Boolean.TRUE.equals(logout)));
 
         // ECP flow
-        rep.setAllowEcpFlow(getBooleanAttribute(model, SAML_ALLOW_ECP_FLOW));
-    }
-
-    @Override
-    protected void toModelSpecific(SAMLClientRepresentation rep, ClientModel model) {
-        model.setProtocol(SAMLClientRepresentation.PROTOCOL);
-
-        // Name ID settings
-        setAttributeIfNotNull(model, SAML_NAME_ID_FORMAT, rep.getNameIdFormat());
-        setBooleanAttributeIfNotNull(model, SAML_FORCE_NAME_ID_FORMAT, rep.getForceNameIdFormat());
-
-        // Signature settings
-        setBooleanAttributeIfNotNull(model, SAML_AUTHN_STATEMENT, rep.getIncludeAuthnStatement());
-        setBooleanAttributeIfNotNull(model, SAML_SERVER_SIGNATURE, rep.getSignDocuments());
-        setBooleanAttributeIfNotNull(model, SAML_ASSERTION_SIGNATURE, rep.getSignAssertions());
-        setBooleanAttributeIfNotNull(model, SAML_CLIENT_SIGNATURE, rep.getClientSignatureRequired());
-        setAttributeIfNotNull(model, SAML_SIGNATURE_ALGORITHM, rep.getSignatureAlgorithm());
-        setAttributeIfNotNull(model, SAML_SIGNATURE_CANONICALIZATION, rep.getSignatureCanonicalizationMethod());
-        setAttributeIfNotNull(model, SAML_SIGNING_CERTIFICATE, rep.getSigningCertificate());
-
-        // Binding and logout settings
-        setBooleanAttributeIfNotNull(model, SAML_FORCE_POST_BINDING, rep.getForcePostBinding());
-        if (rep.getFrontChannelLogout() != null) {
-            model.setFrontchannelLogout(rep.getFrontChannelLogout());
-        }
-
-        // ECP flow
-        setBooleanAttributeIfNotNull(model, SAML_ALLOW_ECP_FLOW, rep.getAllowEcpFlow());
+        addBooleanAttributeMapping(SAMLClientRepresentation.ALLOW_ECP_FLOW_FIELD, SAML_ALLOW_ECP_FLOW);
     }
 
     private Boolean getBooleanAttribute(ClientModel model, String key) {
@@ -114,4 +95,5 @@ public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepre
             model.setAttribute(key, value.toString());
         }
     }
+
 }

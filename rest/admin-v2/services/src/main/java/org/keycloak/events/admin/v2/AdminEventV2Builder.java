@@ -17,14 +17,14 @@
 package org.keycloak.events.admin.v2;
 
 
-import jakarta.ws.rs.core.UriInfo;
-
 import org.keycloak.common.ClientConnection;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.StripSecretsUtilsV2;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
+
+import jakarta.ws.rs.core.UriInfo;
 
 /**
  * Builder for Admin API v2 events.

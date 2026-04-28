@@ -2,58 +2,52 @@ package org.keycloak.models.mapper;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.keycloak.models.ClientModel;
-import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RoleModel;
+import org.keycloak.representations.admin.v2.FieldMapper;
 import org.keycloak.representations.admin.v2.OIDCClientRepresentation;
+import org.keycloak.representations.admin.v2.OIDCClientRepresentation.Auth;
+import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
-public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepresentation> {
-    public OIDCClientModelMapper(KeycloakSession session) {
-        super(session);
+public class OIDCClientModelMapper extends BaseClientModelMapper {
+    @Override
+    protected OIDCClientRepresentation createClientRepresentation(FieldMapper mapper) {
+        return new OIDCClientRepresentation(mapper);
+    }
+    
+    public OIDCClientModelMapper() {
+        addMapping(OIDCClientRepresentation.LOGIN_FLOWS_FIELD, model -> createLoginFlows(model), (model, flows) -> setModelFromFlows(flows, model));
+        addMapping(OIDCClientRepresentation.AUTH_FIELD, model -> getAuth(model), (model, auth) -> setAuth(model, auth));
+        addMapping(OIDCClientRepresentation.WEB_ORIGINS_FIELD, model -> new LinkedHashSet<>(model.getWebOrigins()), (model, webOrigins) -> model.setWebOrigins(new LinkedHashSet<>(webOrigins)));
+        addMapping(OIDCClientRepresentation.SERVICE_ACCOUNT_ROLES_FIELD, model -> getServiceAccountRoles(model), null);
     }
 
-    @Override
-    protected OIDCClientRepresentation createClientRepresentation() {
-        return new OIDCClientRepresentation();
-    }
-
-    @Override
-    protected void fromModelSpecific(ClientModel model, OIDCClientRepresentation rep) {
-        rep.setLoginFlows(createLoginFlows(model));
-
+    private OIDCClientRepresentation.Auth getAuth(ClientModel model) {
+        OIDCClientRepresentation.Auth auth = null;
         if (!model.isPublicClient()) {
-            OIDCClientRepresentation.Auth auth = new OIDCClientRepresentation.Auth();
+            auth = new OIDCClientRepresentation.Auth();
             auth.setMethod(model.getClientAuthenticatorType());
             auth.setSecret(model.getSecret());
-            rep.setAuth(auth);
             // TODO: auth.certificate
         }
-
-        rep.setWebOrigins(new HashSet<>(model.getWebOrigins()));
-        rep.setServiceAccountRoles(getServiceAccountRoles(model));
+        return auth;
     }
 
-    @Override
-    protected void toModelSpecific(OIDCClientRepresentation rep, ClientModel model) {
-        if (rep.getAuth() != null) {
+    private void setAuth(ClientModel model, Auth auth) {
+        if (auth != null) {
             model.setPublicClient(false);
-            model.setClientAuthenticatorType(rep.getAuth().getMethod());
-            model.setSecret(rep.getAuth().getSecret());
+            model.setClientAuthenticatorType(auth.getMethod());
+            model.setSecret(auth.getSecret());
         } else {
             model.setPublicClient(true);
         }
-
-        setModelFromFlows(rep.getLoginFlows(), model);
-
-        model.setWebOrigins(new HashSet<>(rep.getWebOrigins()));
-
-        // Service account roles are not handled here
     }
 
     private Set<OIDCClientRepresentation.Flow> createLoginFlows(ClientModel model) {
@@ -82,7 +76,7 @@ public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepre
 
     private Set<String> getServiceAccountRoles(ClientModel client) {
         if (client.isServiceAccountsEnabled()) {
-            var serviceAccount = session.users().getServiceAccount(client);
+            var serviceAccount = KeycloakSessionUtil.getKeycloakSession().users().getServiceAccount(client);
             if (serviceAccount != null) {
                 return serviceAccount.getRoleMappingsStream()
                         .map(RoleModel::getName)
@@ -91,4 +85,5 @@ public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepre
         }
         return Collections.emptySet();
     }
+
 }

@@ -1,81 +1,50 @@
 package org.keycloak.models.mapper;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.keycloak.models.ClientModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.representations.admin.v2.BaseClientRepresentation;
+import org.keycloak.representations.admin.v2.FieldMapper;
 
-/**
- * @author Vaclav Muzikar <vmuzikar@redhat.com>
- */
-public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> implements ClientModelMapper {
-    protected final KeycloakSession session;
+public abstract class BaseClientModelMapper {
+    
+    Map<String, MappedField<ClientModel, ?>> fields = new HashMap<>();
+    
+    protected <F> void addMapping(String name, Function<ClientModel, F> modelGetter, BiConsumer<ClientModel, F> modelSetter) {
+        fields.put(name, new MappedField<>(modelGetter, modelSetter));
+    }
+    
+    public BaseClientModelMapper() {
+        addMapping(BaseClientRepresentation.UUID_FIELD, ClientModel::getId, null);
+        addMapping(BaseClientRepresentation.ENABLED_FIELD, ClientModel::isEnabled, (model, enabled) -> model.setEnabled(Boolean.TRUE.equals(enabled)));
+        addMapping(BaseClientRepresentation.CLIENT_ID_FIELD, ClientModel::getClientId, ClientModel::setClientId);
+        addMapping(BaseClientRepresentation.DESCRIPTION_FIELD, ClientModel::getDescription, ClientModel::setDescription);
+        addMapping(BaseClientRepresentation.DISPLAY_NAME_FIELD, ClientModel::getName, ClientModel::setName);
+        addMapping(BaseClientRepresentation.APP_URL_FIELD, ClientModel::getBaseUrl, ClientModel::setBaseUrl);
+        // TODO: consider built-in logic for copying collections
+        addMapping(BaseClientRepresentation.REDIRECT_URIS_FIELD, model -> new LinkedHashSet<>(model.getRedirectUris()), (model, uris) -> model.setRedirectUris(new LinkedHashSet<>(uris)));
+        addMapping(BaseClientRepresentation.ROLES_FIELD, model -> model.getRolesStream().map(RoleModel::getName).collect(Collectors.toSet()), null);
+    }
+    
+    abstract BaseClientRepresentation createClientRepresentation(FieldMapper mapper);
 
-    public BaseClientModelMapper(KeycloakSession session) {
-        this.session = session;
+    public BaseClientRepresentation fromModel(ClientModel client) {
+        return createClientRepresentation(new ClientModelFieldMapper(client, fields));
     }
 
-    @Override
-    public BaseClientRepresentation fromModel(ClientModel model) {
-        // We don't want reps to depend on any unnecessary fields deps, hence no generated builder.
-
-        T rep = createClientRepresentation();
-
-        rep.setUuid(model.getId());
-        rep.setEnabled(model.isEnabled());
-        rep.setClientId(model.getClientId());
-        rep.setDescription(model.getDescription());
-        rep.setDisplayName(model.getName());
-        rep.setAppUrl(model.getBaseUrl());
-        rep.setRedirectUris(new HashSet<>(model.getRedirectUris()));
-        rep.setRoles(model.getRolesStream().map(RoleModel::getName).collect(Collectors.toSet()));
-
-        fromModelSpecific(model, rep);
-
-        return rep;
+    public void toModel(BaseClientRepresentation client, ClientModel model) {
+        fields.forEach((k, v) -> v.modelSetter.accept(model, client.getFieldMapper().get(k)));
     }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public ClientModel toModel(BaseClientRepresentation rep, ClientModel existingModel) {
-        if (existingModel == null) {
-            existingModel = createClientModel(rep);
-        }
-
-        existingModel.setProtocol(rep.getProtocol());
-        existingModel.setEnabled(Boolean.TRUE.equals(rep.getEnabled()));
-        existingModel.setClientId(rep.getClientId());
-        existingModel.setDescription(rep.getDescription());
-        existingModel.setName(rep.getDisplayName());
-        existingModel.setBaseUrl(rep.getAppUrl());
-        existingModel.setRedirectUris(new HashSet<>(rep.getRedirectUris()));
-        // Roles are not handled here
-
-        toModelSpecific((T) rep, existingModel);
-
-        return existingModel;
+    
+    public void materialize(Set<String> fields) {
+        
     }
-
-    protected ClientModel createClientModel(BaseClientRepresentation rep) {
-        RealmModel realm = session.getContext().getRealm();
-
-        // dummy add/remove to obtain a detached model
-        var model = realm.addClient(rep.getClientId());
-        realm.removeClient(model.getId());
-        return model;
-    }
-
-    protected abstract T createClientRepresentation();
-
-    protected abstract void fromModelSpecific(ClientModel model, T rep);
-
-    protected abstract void toModelSpecific(T rep, ClientModel model);
-
-    @Override
-    public void close() {
-    }
+    
 }

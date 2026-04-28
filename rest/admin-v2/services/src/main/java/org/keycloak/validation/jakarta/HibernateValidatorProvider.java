@@ -3,13 +3,13 @@ package org.keycloak.validation.jakarta;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.hibernate.validator.HibernateValidatorFactory;
+
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-
-import org.hibernate.validator.HibernateValidatorFactory;
 
 /**
  * Hibernate Validator implementation of {@link JakartaValidatorProvider} that supports

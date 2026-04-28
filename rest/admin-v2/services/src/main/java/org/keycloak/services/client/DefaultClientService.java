@@ -1,5 +1,8 @@
 package org.keycloak.services.client;
 
+import static org.keycloak.representations.admin.v2.validators.ClientSecretNotBlankValidator.isClientSecret;
+import static org.keycloak.utils.StringUtil.isBlank;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -11,11 +14,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.annotation.Nonnull;
-import jakarta.validation.groups.Default;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
-
+import org.apache.http.HttpEntity;
+import org.apache.http.util.EntityUtils;
 import org.keycloak.authorization.fgap.AdminPermissionsSchema;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
@@ -26,7 +26,8 @@ import org.keycloak.models.ModelException;
 import org.keycloak.models.ModelValidationException;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
-import org.keycloak.models.mapper.ClientModelMapper;
+import org.keycloak.models.mapper.BaseClientModelMapper;
+import org.keycloak.models.mapper.ClientModelMappers;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.admin.v2.BaseClientRepresentation;
@@ -64,18 +65,19 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.http.HttpEntity;
-import org.apache.http.util.EntityUtils;
 
-import static org.keycloak.representations.admin.v2.validators.ClientSecretNotBlankValidator.isClientSecret;
-import static org.keycloak.utils.StringUtil.isBlank;
+import jakarta.annotation.Nonnull;
+import jakarta.validation.groups.Default;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 
 /**
  * Default client service for Admin Client API v2
  */
 public class DefaultClientService implements ClientService {
     private static final ObjectMapper MAPPER = new ObjectMapperResolver().getContext(null);
-
+    private static final ClientModelMappers MAPPERS = new ClientModelMappers();
+    
     private final KeycloakSession session;
     private final AdminPermissionEvaluator permissions;
     private final RealmAdminResource realmResource;
@@ -237,7 +239,7 @@ public class DefaultClientService implements ClientService {
             model = avoidClientIdPhishing(realm.getClientByClientId(clientId)).orElse(null);
         }
         boolean alreadyExists = model != null;
-        ClientModelMapper mapper = getMapper(client.getProtocol());
+        BaseClientModelMapper mapper = getMapper(client.getProtocol());
 
         try {
             if (alreadyExists) {
@@ -254,7 +256,7 @@ public class DefaultClientService implements ClientService {
                         generateClientSecretIfNeeded(client, model);
 
                         // Update model
-                        model = mapper.toModel(client, model);
+                        mapper.toModel(client, model);
 
                         // Validate the fully populated model
                         ValidationUtil.validateClient(session, model, false, r -> {
@@ -327,9 +329,10 @@ public class DefaultClientService implements ClientService {
      * <p>
      * For more details, see the <a href="https://github.com/keycloak/keycloak/issues/47576">keycloak#47576</a>.
      */
-    private ClientRepresentation getProposedOldRepresentation(RealmModel realm, BaseClientRepresentation client, ClientModelMapper mapper) {
+    private ClientRepresentation getProposedOldRepresentation(RealmModel realm, BaseClientRepresentation client, BaseClientModelMapper mapper) {
         String tempId = "__temp__" + client.getClientId() + "__" + System.nanoTime();
-        ClientModel tempModel = mapper.toModel(client, realm.addClient(tempId));
+        ClientModel tempModel = realm.addClient(tempId);
+        mapper.toModel(client, tempModel);
         try {
             var proposedRepresentation = ModelToRepresentation.toRepresentation(tempModel, session);
             proposedRepresentation.setClientId(client.getClientId());
@@ -453,8 +456,9 @@ public class DefaultClientService implements ClientService {
         }
     }
 
-    protected ClientModelMapper getMapper(String protocol) {
-        return Optional.ofNullable(session.getProvider(ClientModelMapper.class, protocol))
-                .orElseThrow(() -> new ServiceException("Mapper not found, unsupported client protocol: " + protocol, Response.Status.BAD_REQUEST));
+    public BaseClientModelMapper getMapper(String protocol) {
+        return MAPPERS.getMapper(protocol).orElseThrow(() -> new ServiceException("Mapper not found, unsupported client protocol: " + protocol,
+                Response.Status.BAD_REQUEST));
     }
+    
 }

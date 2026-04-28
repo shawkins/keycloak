@@ -1,15 +1,15 @@
 package org.keycloak.rest.admin.api;
 
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.Provider;
-
 import org.keycloak.admin.api.AdminApi;
 import org.keycloak.admin.api.AdminRootV2;
 import org.keycloak.common.Profile;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resources.admin.AdminCorsPreflightService;
+
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class DefaultAdminRootV2 implements AdminRootV2 {
