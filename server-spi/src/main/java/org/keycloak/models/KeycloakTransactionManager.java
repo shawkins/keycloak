@@ -17,6 +17,8 @@
 
 package org.keycloak.models;
 
+import java.util.function.Supplier;
+
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -42,4 +44,6 @@ public interface KeycloakTransactionManager extends KeycloakTransaction {
     void enlistAfterCompletion(KeycloakTransaction transaction);
 
     void enlistPrepare(KeycloakTransaction transaction);
+
+    <T> T doInTransaction(Supplier<T> task);
 }

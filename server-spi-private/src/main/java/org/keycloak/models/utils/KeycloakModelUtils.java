@@ -460,19 +460,22 @@ public final class KeycloakModelUtils {
                                                       String taskName) {
         V result;
         KeycloakSession existing = KeycloakSessionUtil.getKeycloakSession();
-        try (KeycloakSession session = factory.create()) {
+        KeycloakSession session = existing == null ? factory.create() : null;
+        if (existing == null && context != null) {
+            throw new AssertionError("No bound session, but a context provided");
+        }
+        if (existing != null && context != null && context != existing.getContext()) {
+            throw new AssertionError("Context differs from existing session");
+        }
+        try {
             RequestContextHelper.getContext(session).setContextMessage(taskName);
-            session.getTransactionManager().begin();
             KeycloakSessionUtil.setKeycloakSession(session);
-            try {
-                cloneContextRealmClientToSession(context, session);
-                result = callable.run(session);
-            } catch (Throwable t) {
-                session.getTransactionManager().setRollbackOnly();
-                throw t;
-            }
+//                cloneContextRealmClientToSession(context, session);
+            result = session.getTransactionManager().doInTransaction(() -> callable.run(session));
         } finally {
-            KeycloakSessionUtil.setKeycloakSession(existing);
+            if (existing != null) {
+                KeycloakSessionUtil.setKeycloakSession(existing);
+            }
         }
         return result;
     }

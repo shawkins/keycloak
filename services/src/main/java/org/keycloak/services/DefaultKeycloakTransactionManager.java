@@ -18,6 +18,7 @@ package org.keycloak.services;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import jakarta.transaction.TransactionManager;
 
@@ -33,15 +34,19 @@ import org.keycloak.transaction.JtaTransactionWrapper;
  */
 public class DefaultKeycloakTransactionManager implements KeycloakTransactionManager {
 
-    private final List<KeycloakTransaction> prepare = new LinkedList<>();
-    private final List<KeycloakTransaction> transactions = new LinkedList<>();
-    private final List<KeycloakTransaction> afterCompletion = new LinkedList<>();
-    private boolean active;
-    private boolean rollback;
+    private static class TransactionState {
+        private final List<KeycloakTransaction> prepare = new LinkedList<>();
+        private final List<KeycloakTransaction> transactions = new LinkedList<>();
+        private final List<KeycloakTransaction> afterCompletion = new LinkedList<>();
+        private boolean active;
+        private boolean rollback;
+        // Used to prevent double committing/rollback if there is an uncaught exception
+        protected boolean completed;
+    }
+
     private final KeycloakSession session;
     private JTAPolicy jtaPolicy = JTAPolicy.REQUIRES_NEW;
-    // Used to prevent double committing/rollback if there is an uncaught exception
-    protected boolean completed;
+    private TransactionState transactionState = new TransactionState();
 
     public DefaultKeycloakTransactionManager(KeycloakSession session) {
         this.session = session;
@@ -49,29 +54,29 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     @Override
     public void enlist(KeycloakTransaction transaction) {
-        if (active && !transaction.isActive()) {
+        if (transactionState.active && !transaction.isActive()) {
             transaction.begin();
         }
 
-        transactions.add(transaction);
+        transactionState.transactions.add(transaction);
     }
 
     @Override
     public void enlistAfterCompletion(KeycloakTransaction transaction) {
-        if (active && !transaction.isActive()) {
+        if (transactionState.active && !transaction.isActive()) {
             transaction.begin();
         }
 
-        afterCompletion.add(transaction);
+        transactionState.afterCompletion.add(transaction);
     }
 
     @Override
     public void enlistPrepare(KeycloakTransaction transaction) {
-        if (active && !transaction.isActive()) {
+        if (transactionState.active && !transaction.isActive()) {
             transaction.begin();
         }
 
-        prepare.add(transaction);
+        transactionState.prepare.add(transaction);
     }
 
     @Override
@@ -87,11 +92,11 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     @Override
     public void begin() {
-        if (active) {
+        if (transactionState.active) {
              throw new IllegalStateException("Transaction already active");
         }
 
-        completed = false;
+        transactionState.completed = false;
 
         if (jtaPolicy == JTAPolicy.REQUIRES_NEW) {
             JtaTransactionManagerLookup jtaLookup = session.getProvider(JtaTransactionManagerLookup.class);
@@ -103,25 +108,25 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
             }
         }
 
-        for (KeycloakTransaction tx : transactions) {
+        for (KeycloakTransaction tx : transactionState.transactions) {
             tx.begin();
         }
 
-        active = true;
+        transactionState.active = true;
     }
 
     @Override
     public void commit() {
-        if (completed) {
+        if (transactionState.completed) {
             return;
         } else {
-            completed = true;
+            transactionState.completed = true;
         }
 
         TracingProvider tracing = session.getProvider(TracingProvider.class);
         tracing.trace(DefaultKeycloakTransactionManager.class, "commit", span -> {
             RuntimeException exception = null;
-            for (KeycloakTransaction tx : prepare) {
+            for (KeycloakTransaction tx : transactionState.prepare) {
                 try {
                     commitWithTracing(tx, tracing);
                 } catch (RuntimeException e) {
@@ -132,7 +137,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
                 rollback(exception);
                 return;
             }
-            for (KeycloakTransaction tx : transactions) {
+            for (KeycloakTransaction tx : transactionState.transactions) {
                 try {
                     commitWithTracing(tx, tracing);
                 } catch (RuntimeException e) {
@@ -142,7 +147,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
             // Don't commit "afterCompletion" if commit of some main transaction failed
             if (exception == null) {
-                for (KeycloakTransaction tx : afterCompletion) {
+                for (KeycloakTransaction tx : transactionState.afterCompletion) {
                     try {
                         commitWithTracing(tx, tracing);
                     } catch (RuntimeException e) {
@@ -150,7 +155,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
                     }
                 }
             } else {
-                for (KeycloakTransaction tx : afterCompletion) {
+                for (KeycloakTransaction tx : transactionState.afterCompletion) {
                     try {
                         tx.rollback();
                     } catch (RuntimeException e) {
@@ -159,7 +164,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
                 }
             }
 
-            active = false;
+            transactionState.active = false;
             if (exception != null) {
                 throw exception;
             }
@@ -174,10 +179,10 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     @Override
     public void rollback() {
-        if (completed) {
+        if (transactionState.completed) {
             return;
         } else {
-            completed = true;
+            transactionState.completed = true;
         }
 
         RuntimeException exception = null;
@@ -187,21 +192,21 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
     protected void rollback(RuntimeException exception) {
         TracingProvider tracing = session.getProvider(TracingProvider.class);
 
-        for (KeycloakTransaction tx : transactions) {
+        for (KeycloakTransaction tx : transactionState.transactions) {
             try {
                 rollbackWithTracing(tx, tracing);
             } catch (RuntimeException e) {
                 exception = exception != null ? e : exception;
             }
         }
-        for (KeycloakTransaction tx : afterCompletion) {
+        for (KeycloakTransaction tx : transactionState.afterCompletion) {
             try {
                 rollbackWithTracing(tx, tracing);
             } catch (RuntimeException e) {
                 exception = exception != null ? e : exception;
             }
         }
-        active = false;
+        transactionState.active = false;
         if (exception != null) {
             throw exception;
         }
@@ -215,16 +220,16 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     @Override
     public void setRollbackOnly() {
-        rollback = true;
+        transactionState.rollback = true;
     }
 
     @Override
     public boolean getRollbackOnly() {
-        if (rollback) {
+        if (transactionState.rollback) {
             return true;
         }
 
-        for (KeycloakTransaction tx : transactions) {
+        for (KeycloakTransaction tx : transactionState.transactions) {
             if (tx.getRollbackOnly()) {
                 return true;
             }
@@ -235,7 +240,34 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     @Override
     public boolean isActive() {
-        return active;
+        return transactionState.active;
     }
 
+    @Override
+    public <T> T doInTransaction(Supplier<T> task) {
+        TransactionState savedState = null;
+        if (isActive()) {
+            savedState = transactionState;
+            this.transactionState = new TransactionState();
+        }
+        begin();
+        try {
+            return task.get();
+        } catch (Throwable t) {
+            this.setRollbackOnly();
+            throw t;
+        } finally {
+            try {
+                if (this.getRollbackOnly()) {
+                    this.rollback();
+                } else {
+                    this.commit();
+                }
+            } finally {
+                if (savedState != null) {
+                    this.transactionState = savedState;
+                }
+            }
+        }
+    }
 }
