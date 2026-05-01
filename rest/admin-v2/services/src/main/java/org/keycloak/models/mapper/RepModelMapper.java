@@ -11,7 +11,7 @@ public interface RepModelMapper <T, U> {
         return fromModel(model, null);
     }
     
-    T fromModel(U model, Set<String> includeProperties);
+    T fromModel(U model, Set<String> includeFields);
     
     void toModel(T rep, U existingModel);
 }

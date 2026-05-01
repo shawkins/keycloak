@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -99,7 +100,7 @@ public class ClientApiV2Test extends AbstractClientApiV2Test{
 
     @InjectClient(realmRef = "master")
     ManagedClient testClient;
-    
+
     @Test
     public void getClient() {
         var client = clients(testRealm.getName()).client("account").getClient();
@@ -359,6 +360,12 @@ public class ClientApiV2Test extends AbstractClientApiV2Test{
                 assertThat(client, Matchers.samePropertyValuesAs(toCompare));
             }
         }
+    }
+    
+    @Test
+    public void invalidFieldProjection() {
+        BadRequestException e = assertThrows(BadRequestException.class, () -> clients(testRealm.getName()).getClients(Set.of("unknown!")));
+        assertEquals("{\"error\":\"unknown! is an unknown field\"}", e.getResponse().readEntity(String.class));
     }
 
     @Test

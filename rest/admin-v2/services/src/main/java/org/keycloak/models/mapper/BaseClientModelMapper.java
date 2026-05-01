@@ -71,14 +71,14 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
     }
     
     @Override
-    public BaseClientRepresentation fromModel(ClientModel model, Set<String> includeProperties) {
+    public BaseClientRepresentation fromModel(ClientModel model, Set<String> includeFields) {
         // We don't want reps to depend on any unnecessary fields deps, hence no generated builder.
 
         T rep = createClientRepresentation();
         
         var stream = fields.entrySet().stream();
-        if (includeProperties != null && !includeProperties.isEmpty()) {
-            stream = stream.filter(e -> includeProperties.contains(e.getKey()));
+        if (includeFields != null && !includeFields.isEmpty()) {
+            stream = stream.filter(e -> includeFields.contains(e.getKey()));
         }
         stream.forEach(e -> e.getValue().fromModel(model, rep));
 
@@ -88,7 +88,7 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
     @Override
     @SuppressWarnings("unchecked")
     public void toModel(BaseClientRepresentation rep, ClientModel existingModel) {
-        fields.values().stream().forEach(m -> m.toModel(rep, existingModel));
+        fields.values().forEach(m -> m.toModel(rep, existingModel));
     }
 
     protected abstract T createClientRepresentation();

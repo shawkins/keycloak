@@ -132,7 +132,7 @@ public class DefaultClientService implements ClientService {
         //  however this highlights an issue we may hit with polymorphism a field may
         //  be projectable in one subtype, but fixed in another
         
-        projectionOptions.getFields().stream().forEach(s -> {
+        projectionOptions.getFields().forEach(s -> {
             if (!MAPPERS.isKnownField(s)) {
                 throw new ServiceException("%s is an unknown field".formatted(s), Response.Status.BAD_REQUEST);
             }
