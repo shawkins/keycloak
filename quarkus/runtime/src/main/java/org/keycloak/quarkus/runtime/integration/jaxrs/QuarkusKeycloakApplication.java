@@ -18,6 +18,7 @@
 package org.keycloak.quarkus.runtime.integration.jaxrs;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import jakarta.enterprise.event.Observes;
 import jakarta.ws.rs.ApplicationPath;
@@ -72,17 +73,16 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
         var asyncBootstrap = Configuration.getOptionalKcValue(ServerOptions.SERVER_ASYNC_BOOTSTRAP)
                 .map(Boolean::parseBoolean)
                 .orElse(Boolean.TRUE);
+        Executor executor = Runnable::run;
         // skip async bootstrap in dev and non-server mode
-        if (isDevMode() || isNonServerMode() || isTestLaunchMode() || !asyncBootstrap) {
-            startup();      
-        } else {
-            ManagedExecutor executor = Arc.container().instance(ManagedExecutor.class).get();
-            CompletableFuture.runAsync(this::startup, executor).exceptionally(cause -> {
-                logger.fatal("Failed to bootstrap the server", cause);
-                Quarkus.asyncExit(1);
-                return null;
-            });        
+        if (!isDevMode() && !isNonServerMode() && !isTestLaunchMode() && asyncBootstrap) {
+            executor = Arc.container().instance(ManagedExecutor.class).get();
         }
+        CompletableFuture.runAsync(this::startup, executor).exceptionally(cause -> {
+            logger.fatal("Failed to start the server", cause);
+            Quarkus.asyncExit(1);
+            return null;
+        });        
     }
 
     void onShutdownEvent(@Observes ShutdownEvent event) {

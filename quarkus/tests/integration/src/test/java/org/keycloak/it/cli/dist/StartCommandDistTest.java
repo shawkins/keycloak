@@ -292,7 +292,7 @@ public class StartCommandDistTest {
         CLIResult result = dist.run("start", "--server-async-bootstrap=true", "--hostname-strict=false", "--db=dev-file", "--http-enabled=true", "--spi-realm-restapi-extension--test-resources--fail=true");
         Awaitility.await().atMost(2, TimeUnit.MINUTES).until(() -> !rawDist.isRunning());
         dist.stop();
-        result.assertMessage("Failed to bootstrap the server");
+        result.assertMessage("Failed to start the server");
         result.assertMessage("I've failed");
         assertEquals(1, dist.getExitCode());
     }
