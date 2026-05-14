@@ -67,7 +67,15 @@ public class GzipResourceEncodingProviderFactory implements ResourceEncodingProv
             return cacheDir;
         }
 
-        File cacheRoot = new File(KeycloakApplication.getTmpDirectory(), "kc-gzip-cache");
+        String tmpDir;
+        try {
+            tmpDir = KeycloakApplication.getTmpDirectory();
+        } catch (RuntimeException e) {
+            logger.warn("No temporary directory configured; gzip caching of theme resources is disabled.");
+            return null;
+        }
+
+        File cacheRoot = new File(tmpDir, "kc-gzip-cache");
         File cacheDir = new File(cacheRoot, Version.RESOURCES_VERSION);
 
         if (cacheRoot.isDirectory()) {
