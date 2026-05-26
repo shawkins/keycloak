@@ -423,10 +423,6 @@ public class SamlService extends AuthorizationEndpointBase {
                 ArtifactResolutionRunnable artifactResolutionRunnable = new ArtifactResolutionRunnable(getBindingType(), asyncResponse, doc, clientArtifactBindingURI, relayState);
                 ScheduledTaskRunner task = new ScheduledTaskRunner(session.getKeycloakSessionFactory(), artifactResolutionRunnable);
                 executor.execute(task);
-
-                logger.tracef("ArtifactResolutionRunnable scheduled, current transaction will be rolled back");
-                // Current transaction must be ignored due to asyncResponse.
-                session.getTransactionManager().rollback();
             } catch (URISyntaxException | ProcessingException | ParsingException | ConfigurationException e) {
                 event.event(EventType.LOGIN);
                 event.detail(Details.REASON, e.getMessage());
