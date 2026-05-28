@@ -290,12 +290,16 @@ public class WelcomeResource {
         // if proxy-headers and proxy-protocol aren't set, then we can't properly tell if we're behind a local proxy, so don't consider this local
         Scope rootConfig = Config.scope().root();
         if (rootConfig.get(ProxyOptions.PROXY_HEADERS.getKey()) == null
-                && !rootConfig.getBoolean(ProxyOptions.PROXY_PROTOCOL_ENABLED.getKey())
+                && !Boolean.TRUE.equals(rootConfig.getBoolean(ProxyOptions.PROXY_PROTOCOL_ENABLED.getKey()))
                 && !Environment.isDevMode()) {
             logger.debugf("proxy-headers, nor proxy-protocol enabled, won't consider the access local for non-dev mode");
             return false;
         }
 
+        return isLocalConnection(session);
+    }
+
+    public static boolean isLocalConnection(KeycloakSession session) {
         ClientConnection clientConnection = session.getContext().getConnection();
         String remoteAddress = clientConnection.getRemoteAddr();
         String localAddress = clientConnection.getLocalAddr();

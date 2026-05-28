@@ -119,7 +119,7 @@ public class AdminRoot {
         String requestUrl = frontEndUriInfo.getRequestUri().toString();
 
         // if we're using the admin url or are local, it's also safe to redirect
-        return requestUrl.startsWith(adminUrl) || WelcomeResource.isLocal(session);
+        return requestUrl.startsWith(adminUrl) || WelcomeResource.isLocalConnection(session);
     }
 
     /**
