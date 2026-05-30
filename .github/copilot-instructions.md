@@ -9,12 +9,12 @@
 
 ## Priority Areas (Review These)
 
-### Follows Guidelines
+### Repository-specific expectations
 
-* Ensure that the [Contributing Guide](../CONTRIBUTING.md) has been followed. In particular check that:
-    * the pull request description must reference an open GitHub issue
-    * the commit must contain a DCO sign off
-    * most non-documentation changes should have test coverage
+- Every PR should map to a GitHub issue and keep a focused scope (`CONTRIBUTING.md`).
+- The commit message should map to the same GitHub issue
+- Include docs/tests when behavior changes.
+- Do not introduce new test frameworks or broad formatting/refactoring unrelated to the task.
 
 ### Security & Safety
 
