@@ -42,6 +42,10 @@ public final class Configuration {
     public static final String KC_OPTIMIZED = NS_KEYCLOAK_PREFIX + "optimized";
 
     private static SmallRyeConfig config;
+    
+    public static class NotInitializedException extends IllegalStateException {
+        
+    }
 
     private Configuration() {
 
@@ -99,8 +103,11 @@ public final class Configuration {
         return config != null;
     }
 
-    public static synchronized SmallRyeConfig getConfig() {
+    public static synchronized SmallRyeConfig getConfig(boolean init) {
         if (config == null) {
+            if (!init) {
+                throw new NotInitializedException();
+            }
             config = ConfigUtils.emptyConfigBuilder().addDiscoveredSources().build();
         }
         return config;
@@ -131,7 +138,7 @@ public final class Configuration {
             return PersistedConfigSource.getInstance().getPropertyNames();
         }
 
-        return getConfig().getPropertyNames();
+        return getConfig(false).getPropertyNames();
     }
 
     public static ConfigValue getConfigValue(Option<?> option) {
@@ -139,7 +146,7 @@ public final class Configuration {
     }
 
     public static ConfigValue getConfigValue(String propertyName) {
-        return getConfig().getConfigValue(propertyName);
+        return getConfig(false).getConfigValue(propertyName);
     }
 
     public static ConfigValue getKcConfigValue(String propertyName) {
@@ -147,7 +154,7 @@ public final class Configuration {
     }
 
     public static Optional<String> getOptionalValue(String name) {
-        return getConfig().getOptionalValue(name, String.class);
+        return getConfig(false).getOptionalValue(name, String.class);
     }
 
     public static Optional<String> getOptionalKcValue(String propertyName) {
@@ -171,7 +178,7 @@ public final class Configuration {
     }
 
     public static Optional<Integer> getOptionalIntegerValue(String propertyName) {
-        return getConfig().getOptionalValue(NS_KEYCLOAK_PREFIX.concat(propertyName), Integer.class);
+        return getConfig(false).getOptionalValue(NS_KEYCLOAK_PREFIX.concat(propertyName), Integer.class);
     }
 
     public static String toEnvVarFormat(String key) {

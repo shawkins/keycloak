@@ -34,6 +34,7 @@ import org.keycloak.config.OpenApiOptions;
 import org.keycloak.config.Option;
 import org.keycloak.config.TelemetryOptions;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.keycloak.quarkus.runtime.configuration.IgnoredArtifacts.JDBC_H2;
@@ -52,6 +53,11 @@ import static org.hamcrest.Matchers.in;
 import static org.junit.Assert.assertTrue;
 
 public class IgnoredArtifactsTest extends AbstractConfigurationTest {
+    
+    @Before
+    public void beforeEach() {
+        Configuration.getConfig(true);
+    }
 
     @Test
     public void fipsDisabled() {

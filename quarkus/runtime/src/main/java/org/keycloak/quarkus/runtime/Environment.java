@@ -202,6 +202,10 @@ public final class Environment {
         Profile profile = Profile.getInstance();
 
         if (profile == null) {
+            // the profile can't be inited before the config
+            // this is in the critical path for most test logic and PicoCli
+            // although it made need to be duplicated elsewhere for clarity
+            Configuration.getConfig(true);
             profile = Profile.configure(new QuarkusSingleProfileConfigResolver(), new QuarkusProfileConfigResolver());
         }
 

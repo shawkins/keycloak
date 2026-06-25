@@ -44,7 +44,7 @@ public class MicroProfileConfigProvider implements Config.ConfigProvider {
     private final SmallRyeConfig config;
 
     public MicroProfileConfigProvider() {
-        this(Configuration.getConfig());
+        this(Configuration.getConfig(false));
     }
 
     public MicroProfileConfigProvider(SmallRyeConfig config) {

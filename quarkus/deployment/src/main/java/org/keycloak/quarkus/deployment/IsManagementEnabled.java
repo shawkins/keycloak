@@ -18,11 +18,15 @@ package org.keycloak.quarkus.deployment;
 
 import java.util.function.BooleanSupplier;
 
+import org.keycloak.quarkus.runtime.configuration.Configuration;
 import org.keycloak.quarkus.runtime.configuration.mappers.ManagementPropertyMappers;
 
 public class IsManagementEnabled implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
+        // this is running in the deployment classloader
+        // our config may not exist and needs created
+        Configuration.getConfig(true); 
         return ManagementPropertyMappers.isManagementEnabled();
     }
 }

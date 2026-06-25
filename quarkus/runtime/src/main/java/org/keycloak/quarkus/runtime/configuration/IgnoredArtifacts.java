@@ -129,7 +129,7 @@ public class IgnoredArtifacts {
     private static Set<String> jdbcDrivers() {
         final Set<Database.Vendor> vendorsOfAllDatasources = new HashSet<>();
 
-        Configuration.getConfig().getPropertyNames().forEach(p -> {
+        Configuration.getConfig(false).getPropertyNames().forEach(p -> {
             if (p.startsWith("quarkus.datasource.") && p.endsWith(".db-kind")) {
                 Configuration.getOptionalValue(p)
                         .flatMap(Database::getVendor)

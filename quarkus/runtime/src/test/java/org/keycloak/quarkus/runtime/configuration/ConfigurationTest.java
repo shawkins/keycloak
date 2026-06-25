@@ -101,7 +101,7 @@ public class ConfigurationTest extends AbstractConfigurationTest {
     @Test
     public void testKeycloakConfPlaceholder() {
         assertEquals("info", createConfig().getRawValue("kc.log-level"));
-        assertTrue(Configuration.getConfig().isPropertyPresent("quarkus.log.category.\"io.k8s\".level"));
+        assertTrue(Configuration.getConfig(false).isPropertyPresent("quarkus.log.category.\"io.k8s\".level"));
         putEnvVar("SOME_LOG_LEVEL", "debug");
         assertEquals("debug", createConfig().getRawValue("kc.log-level"));
         SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().setAddDefaultSources(false).addDiscoveredSources().build();

@@ -73,6 +73,7 @@ import org.infinispan.protostream.SerializationContextInitializer;
 public class KeycloakRecorder {
 
     public void initConfig() {
+        Configuration.getConfig(true);
         Config.init(new MicroProfileConfigProvider());
     }
 

@@ -90,7 +90,7 @@ public abstract class AbstractConfigurationTest {
     static protected SmallRyeConfig createConfig() {
         Configuration.resetConfig();
         Environment.getCurrentOrCreateFeatureProfile();
-        return Configuration.getConfig();
+        return Configuration.getConfig(true);
     }
 
     protected void assertConfig(String key, String expectedValue, boolean isExternal) {

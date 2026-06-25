@@ -230,7 +230,7 @@ public class PersistenceXmlDatasourcesTest {
     private static SmallRyeConfig createConfig() {
         Configuration.resetConfig();
         Environment.getCurrentOrCreateFeatureProfile();
-        return Configuration.getConfig();
+        return Configuration.getConfig(true);
     }
 
     private void assertUsedName(String content, String expectedName) throws IOException {

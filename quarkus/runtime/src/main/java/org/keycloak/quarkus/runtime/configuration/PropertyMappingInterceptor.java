@@ -89,11 +89,12 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
      */
     @Override
     public Iterator<String> iterateNames(ConfigSourceInterceptorContext context) {
+        // TODO: check Config initialization state
         Iterable<String> iterable = context::iterateNames;
 
         final Set<PropertyMapper<?>> mappersWithoutValues = PropertyMappers.getMappers();
 
-        boolean filterRuntime = isAugmenting(context);
+        boolean filterRuntime = isAugmentationGettingRuntimeValues(context);
 
         // this will return different iterations when our configuration is initialized vs not.
         // when the configuration is not initialized, we only need to worry about providing
@@ -153,7 +154,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
         return IteratorUtils.chainedIterator(baseStream.iterator(), inferredValueStream.iterator());
     }
 
-    private boolean isAugmenting(ConfigSourceInterceptorContext context) {
+    private boolean isAugmentationGettingRuntimeValues(ConfigSourceInterceptorContext context) {
         if (augmenting == null) {
             // see BuildTimeConfigurationReader - if a sys properties are excluded, then we're augmenting
             augmenting = context.proceed("file.separator") == null;
@@ -216,8 +217,18 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
         if (Boolean.TRUE.equals(disable.get())) {
             return context.proceed(name);
         }
-
+        
+        if (!Configuration.isInitialized() && (isAugmentationGettingRuntimeValues(context)
+                || Optional.ofNullable(context.proceed("quarkus.application.version"))
+                        .map(ConfigValue::getConfigSourceName).filter(cs -> cs.contains("Build system")).isPresent())) {
+            Configuration.getConfig(true);
+        }
+        
         // Call through NestedPropertyMappingInterceptor to track what we are currently getting the value for
-        return NestedPropertyMappingInterceptor.getValueFromPropertyMappers(context, name, isAugmenting(context));
+        try {
+            return NestedPropertyMappingInterceptor.getValueFromPropertyMappers(context, name, isAugmentationGettingRuntimeValues(context));
+        } catch (Configuration.NotInitializedException e) {
+            return context.proceed(name);
+        }
     }
 }

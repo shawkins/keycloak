@@ -61,7 +61,7 @@ class NonRunningPicocli extends Picocli {
         if (!checkBuild && PersistedConfigSource.getInstance().getConfigValueProperties().isEmpty()) {
             System.getProperties().remove(Environment.KC_CONFIG_REBUILD_CHECK);
         }
-        config = Configuration.getConfig();
+        config = Configuration.getConfig(true);
     }
 
     @Override
