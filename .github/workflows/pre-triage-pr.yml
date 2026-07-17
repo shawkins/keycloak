@@ -2,7 +2,7 @@ name: Pre-triage Pull Request
 
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
     branches:
       - main 
 
@@ -12,17 +12,18 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
       pull-requests: write
     steps:
       - name: Check linked issues
         id: check-linked-issues
-        continue-on-error: true
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          TARGET_REPO: "keycloak/keycloak"
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
@@ -41,16 +42,6 @@ jobs:
           HAS_SKIP_LABEL=$(gh api "repos/$REPO/issues/$PR_NUMBER/labels" \
             --jq ".[] | select(.name == \"$SKIP_LABEL\") | .name" | head -1 || true)
 
-          if [ -n "$HAS_SKIP_LABEL" ]; then
-            EXISTING_COMMENT_ID=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
-              --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" | head -1 || true)
-            if [ -n "$EXISTING_COMMENT_ID" ]; then
-              gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" -X DELETE
-            fi
-            echo "Skipping linked issue checks because '$SKIP_LABEL' label is present."
-            exit 0
-          fi
-
           # Extract linked issue references from a block of text.
           # Accepts all GitHub closing keywords (case-insensitive, with optional colon) followed by
           # same-repo (#NNN), cross-repo (owner/repo#NNN), or URL references.
@@ -67,89 +58,80 @@ jobs:
                 if ($owner && $repo) {
                   print "$owner/$repo#$num\n";
                 } else {
-                  print "#$num\n";
+                  print "$TARGET_REPO#$num\n";
                 }
               }
             ' | sort -u || true
           }
 
-          # Normalize issue references: expand same-repo #NNN to OWNER/REPO#NNN.
-          # Requires $REPO to be set (provided by the workflow env block).
-          normalize_issues() {
-            local issues="$1"
-            while IFS= read -r ref; do
-              [ -z "$ref" ] && continue
-              if [[ "$ref" == \#* ]]; then
-                echo "${REPO}#${ref#\#}"
-              else
-                echo "$ref"
-              fi
-            done <<< "$issues" | sort -u
-          }
+          if [ ! $HAS_SKIP_LABEL ]; then
+            # --- Check PR description ---
+            PR_ISSUES=$(extract_issues "$PR_BODY")
 
-          # --- Check PR description ---
-          PR_ISSUES=$(extract_issues "$PR_BODY")
-          NORM_PR_ISSUES=$(normalize_issues "$PR_ISSUES")
-
-          if [ -z "$PR_ISSUES" ]; then
-            add_error "PR description must contain a linked issue (e.g. 'Closes #NNN' or 'Fixes owner/repo#NNN')"
-          fi
-
-          # --- Check each commit in the PR ---
-          ALL_COMMIT_ISSUES=""
-          while IFS= read -r sha; do
-            if ! COMMIT_MSG=$(gh api "repos/$REPO/git/commits/$sha" --jq '.message' 2>&1); then
-              add_error "Failed to retrieve commit message for $sha: $COMMIT_MSG"
-              continue
+            if [ -z "$PR_ISSUES" ]; then
+              add_error "PR description must contain a linked issue (e.g. 'Closes #NNN')"
             fi
 
-            ISSUES=$(extract_issues "$COMMIT_MSG")
-            if [ -z "$ISSUES" ]; then
-              add_error "Commit $sha must contain a linked issue (e.g. 'Closes #NNN' or 'Fixes owner/repo#NNN')"
-            fi
-            ALL_COMMIT_ISSUES="${ALL_COMMIT_ISSUES}"$'\n'"${ISSUES}"
-          done < <(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/commits" --jq '.[].sha')
+            ALL_COMMIT_ISSUES=""
 
-          if [ "$FAILED" -eq 0 ]; then
-            COMMIT_ISSUES=$(printf '%s\n' "$ALL_COMMIT_ISSUES" | sort -u | grep -v '^$' || true)
-            NORM_COMMIT_ISSUES=$(normalize_issues "$COMMIT_ISSUES")
-
-            # --- Verify PR description and commits reference exactly the same issues ---
-            while IFS= read -r ref; do
-              [ -z "$ref" ] && continue
-              if ! printf '%s\n' "$NORM_COMMIT_ISSUES" | grep -Fxq -- "$ref"; then
-                add_error "Issue $ref is linked in the PR description but not in the commit messages"
-              fi
-            done <<< "$NORM_PR_ISSUES"
-
-            while IFS= read -r ref; do
-              [ -z "$ref" ] && continue
-              if ! printf '%s\n' "$NORM_PR_ISSUES" | grep -Fxq -- "$ref"; then
-                add_error "Issue $ref is linked in the commit messages but not in the PR description"
-              fi
-            done <<< "$NORM_COMMIT_ISSUES"
-          fi
-
-          if [ "$FAILED" -eq 0 ]; then
-            # --- Verify all linked issues are open ---
-            while IFS= read -r ref; do
-              [ -z "$ref" ] && continue
-              [[ "$ref" != *#* ]] && continue
-              issue_repo="${ref%%#*}"
-              issue_num="${ref##*#}"
-              if ! ISSUE_DATA=$(gh api "repos/$issue_repo/issues/$issue_num" 2>&1); then
-                add_error "Issue $ref could not be retrieved: $ISSUE_DATA"
+            # --- Check each commit in the PR ---
+            while IFS= read -r sha; do
+              if ! COMMIT_MSG=$(gh api "repos/$REPO/git/commits/$sha" --jq '.message' 2>&1); then
+                add_error "Failed to retrieve commit message for $sha: $COMMIT_MSG"
                 continue
               fi
-              STATE=$(printf '%s' "$ISSUE_DATA" | jq -r '.state')
-              if [ "$STATE" != "open" ]; then
-                add_error "Issue $ref is not open (current state: $STATE)"
-              fi
-            done <<< "$NORM_PR_ISSUES"
+
+              ISSUES=$(extract_issues "$COMMIT_MSG")
+              # NOTE: accumulate all referenced issue in the commits - the expectation is that the pr will be squashed, this may need refined
+              ALL_COMMIT_ISSUES="${ALL_COMMIT_ISSUES}"$'\n'"${ISSUES}"
+            done < <(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/commits" --jq '.[].sha')
+            
+            if [ "$FAILED" -eq 0 ]; then
+              COMMIT_ISSUES=$(printf '%s\n' "$ALL_COMMIT_ISSUES" | sort -u | grep -v '^$' || true)
+
+              # --- Verify PR description and commits reference exactly the same issues ---
+              while IFS= read -r ref; do
+                [ -z "$ref" ] && continue
+                if ! printf '%s\n' "$COMMIT_ISSUES" | grep -Fxq -- "$ref"; then
+                  add_error "Issue $ref is linked in the PR description but not in a commit messages"
+                fi
+              done <<< "$PR_ISSUES"
+
+              while IFS= read -r ref; do
+                [ -z "$ref" ] && continue
+                if ! printf '%s\n' "$PR_ISSUES" | grep -Fxq -- "$ref"; then
+                  add_error "Issue $ref is linked in the commit messages but not in the PR description"
+                fi
+              done <<< "$COMMIT_ISSUES"
+            fi
+            
+            if [ "$FAILED" -eq 0 ]; then
+              # --- Verify all linked issues are open ---
+              while IFS= read -r ref; do
+                [ -z "$ref" ] && continue
+                [[ "$ref" != *#* ]] && continue
+                issue_repo="${ref%%#*}"
+                issue_num="${ref##*#}"
+                if [[ "$issue_repo" != "$TARGET_REPO" ]]; then
+                  # NOTE: not a keycloak issue, this may need refined
+                  continue
+                fi
+                if ! ISSUE_DATA=$(gh api "repos/$issue_repo/issues/$issue_num" 2>&1); then
+                  add_error "Issue $ref could not be retrieved: $ISSUE_DATA"
+                  continue
+                fi
+                STATE=$(printf '%s' "$ISSUE_DATA" | jq -r '.state')
+                if [ "$STATE" != "open" ]; then
+                  add_error "Issue $ref is not open (current state: $STATE)"
+                fi
+              done <<< "$PR_ISSUES"
+            fi
+          else
+            echo "skipping linked issue check"
           fi
 
           # --- Find any existing bot comment with our marker ---
-          EXISTING_COMMENT_ID=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+          EXISTING_COMMENT_ID=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" | head -1 || true)
 
           if [ "$FAILED" -ne 0 ]; then
@@ -160,10 +142,14 @@ jobs:
           Please refer to [CONTRIBUTING.md](https://github.com/${REPO}/blob/main/CONTRIBUTING.md) for requirements."
 
             if [ -n "$EXISTING_COMMENT_ID" ]; then
-              gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" -X PATCH --raw-field "body=$COMMENT_BODY"
+              jq -n --arg body "$COMMENT_BODY" '{body: $body}' |
+                gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" \
+                  -X PATCH \
+                  --input -
             else
               gh pr comment "$PR_NUMBER" -R "$REPO" --body "$COMMENT_BODY"
             fi
+            gh pr edit "${{ github.event.pull_request.number }}" -R "$GITHUB_REPOSITORY" --add-label "action/waiting-for-author"
             exit 1
           else
             # Remove any previous failure comment on success
@@ -171,12 +157,5 @@ jobs:
               gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" -X DELETE
             fi
             echo "All linked issue checks passed."
+            gh pr edit "${{ github.event.pull_request.number }}" -R "$GITHUB_REPOSITORY" --remove-label "action/waiting-for-author"
           fi
-
-      - name: Add label
-        if: steps.check-linked-issues.outcome == 'failure'
-        run: gh pr edit "${{ github.event.pull_request.number }}" -R "$GITHUB_REPOSITORY" --add-label "action/waiting-for-author"
-      # Label is removed when linked-issue checks do not fail
-      - name: Remove label
-        if: steps.check-linked-issues.outcome != 'failure'
-        run: gh pr edit "${{ github.event.pull_request.number }}" -R "$GITHUB_REPOSITORY" --remove-label "action/waiting-for-author"
