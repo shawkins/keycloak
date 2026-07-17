@@ -65,7 +65,7 @@ jobs:
                 if ($owner && $repo) {
                   print "$owner/$repo#$num\n";
                 } else {
-                  print "$TARGET_REPO#$num\n";
+                  print "'$TARGET_REPO'#$num\n";
                 }
               }
             ' | sort -u || true
@@ -101,6 +101,9 @@ jobs:
 
             ALL_COMMIT_ISSUES=$(get_all_commit_issues)
             COMMIT_ISSUES=$(printf '%s\n' "$ALL_COMMIT_ISSUES" | sort -u | grep -v '^$' || true)
+            
+            # TODO: determine if there are potential timing issues with querying closingIssuesReferences
+            # - it's not clear that they will be updated prior to when the workflow runs'
             
             # Parse GraphQL closingIssuesReferences into owner/repo#NNN format
             parse_closing_refs() {
@@ -162,8 +165,9 @@ jobs:
               #    issue_repo="${ref%%#*}"
               #    if [ "$issue_repo" != "$TARGET_REPO" ]; then
               #      add_error "Manually linked issue $ref is from a different repository, please remove it."
+              #    else
+              #      add_error "Issue $ref is a linked GitHub issue but is not in the PR description"
               #    fi
-              #    add_error "Issue $ref is a linked GitHub issue but is not in the PR description"
               #  fi
               #done <<< "$CLOSING_ISSUES_REFERENCES"
             fi
@@ -218,14 +222,13 @@ jobs:
             echo "skipping linked issue check"
           fi
 
-          # --- Find any existing bot comment with our marker ---
-          EXISTING_COMMENT_ID=$(
-            gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" \
-              --jq --arg marker "$MARKER" \
-              '.[] | select((.body // "") | contains($marker)) | .id' \
-            | head -1 || true
-          )
-
+          # --- Find last existing bot comment with our marker ---
+          EXISTING_COMMENT_ID=$(gh api --paginate "repos/$REPO/issues/$PR_NUMBER/comments" | jq --arg marker "$MARKER" '.[] | select(.body | contains($marker)?) | .id' | tail -n1)
+          
+          if [ -n "$EXISTING_COMMENT_ID" ]; then
+            gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" -X DELETE
+          fi
+          
           if [ "$FAILED" -ne 0 ]; then
             COMMENT_BODY="${MARKER}
           Thank you for contributing this PR. The following linked issue checks failed:
@@ -233,21 +236,10 @@ jobs:
 
           Please refer to [CONTRIBUTING.md](https://github.com/${REPO}/blob/main/CONTRIBUTING.md) for requirements."
 
-            if [ -n "$EXISTING_COMMENT_ID" ]; then
-              jq -n --arg body "$COMMENT_BODY" '{body: $body}' |
-                gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" \
-                  -X PATCH \
-                  --input -
-            else
-              gh pr comment "$PR_NUMBER" -R "$REPO" --body "$COMMENT_BODY"
-            fi
+            gh pr comment "$PR_NUMBER" -R "$REPO" --body "$COMMENT_BODY"
             gh pr edit "${{ github.event.pull_request.number }}" -R "$GITHUB_REPOSITORY" --add-label "action/waiting-for-author"
             exit 1
           else
-            # Remove any previous failure comment on success
-            if [ -n "$EXISTING_COMMENT_ID" ]; then
-              gh api "repos/$REPO/issues/comments/$EXISTING_COMMENT_ID" -X DELETE
-            fi
             echo "All linked issue checks passed."
             gh pr edit "${{ github.event.pull_request.number }}" -R "$GITHUB_REPOSITORY" --remove-label "action/waiting-for-author"
           fi
