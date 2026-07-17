@@ -60,7 +60,7 @@ jobs:
             printf '%s\n' "$text" | perl -ne '
               # Match GitHub closing keywords followed by a same-repo (#NNN),
               # cross-repo (owner/repo#NNN), or URL issue reference.
-              while (/(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):?[ \t]+(?:(?:(?<cro>[\w-]+)\/(?<crr>[\w-]+)#)|#|(?:https:\/\/github\.com\/(?<urlo>[\w-]+)\/(?<urlr>[\w-]+)\/issues\/))(?<num>\d+)\b/gi) {
+              while (/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\b:?[ \t]+(?:(?:(?<cro>[\w-]+)\/(?<crr>[\w-]+)#)|#|(?:https:\/\/github\.com\/(?<urlo>[\w-]+)\/(?<urlr>[\w-]+)\/issues\/))(?<num>\d+)\b/gi) {
                 my $owner = ($+{cro} // $+{urlo} // "");
                 my $repo  = ($+{crr} // $+{urlr} // "");
                 my $num   = $+{num};
@@ -117,14 +117,14 @@ jobs:
             # --- Verify PR description and commits reference exactly the same issues ---
             while IFS= read -r ref; do
               [ -z "$ref" ] && continue
-              if ! printf '%s\n' "$NORM_COMMIT_ISSUES" | grep -qF "$ref"; then
+              if ! printf '%s\n' "$NORM_COMMIT_ISSUES" | grep -Fxq -- "$ref"; then
                 add_error "Issue $ref is linked in the PR description but not in the commit messages"
               fi
             done <<< "$NORM_PR_ISSUES"
 
             while IFS= read -r ref; do
               [ -z "$ref" ] && continue
-              if ! printf '%s\n' "$NORM_PR_ISSUES" | grep -qF "$ref"; then
+              if ! printf '%s\n' "$NORM_PR_ISSUES" | grep -Fxq -- "$ref"; then
                 add_error "Issue $ref is linked in the commit messages but not in the PR description"
               fi
             done <<< "$NORM_COMMIT_ISSUES"
