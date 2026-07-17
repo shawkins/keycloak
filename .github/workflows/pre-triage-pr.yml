@@ -51,44 +51,48 @@ jobs:
             exit 0
           fi
 
-          # Extract linked issue numbers from a block of text.
-          # Valid patterns: "Closes #NNN" (single issue) or "Resolves #NNN" (one or more issues),
-          # each on its own line, case-sensitive, no colon after the keyword.
+          # Extract linked issue references from a block of text.
+          # Accepts all GitHub closing keywords (case-insensitive, with optional colon) followed by
+          # same-repo (#NNN), cross-repo (owner/repo#NNN), or URL references.
+          # Outputs one reference per line in the format "owner/repo#NNN" or "#NNN".
           extract_issues() {
             local text="$1"
-            printf '%s\n' "$text" | grep -E '^(Closes|Resolves) #[0-9]+' | sed -E 's/^(Closes|Resolves) #//' | sort -u || true
+            printf '%s\n' "$text" | perl -ne '
+              # Match GitHub closing keywords followed by a same-repo (#NNN),
+              # cross-repo (owner/repo#NNN), or URL issue reference.
+              while (/(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):?[ \t]+(?:(?:(?<cro>[\w-]+)\/(?<crr>[\w-]+)#)|#|(?:https:\/\/github\.com\/(?<urlo>[\w-]+)\/(?<urlr>[\w-]+)\/issues\/))(?<num>\d+)\b/gi) {
+                my $owner = ($+{cro} // $+{urlo} // "");
+                my $repo  = ($+{crr} // $+{urlr} // "");
+                my $num   = $+{num};
+                if ($owner && $repo) {
+                  print "$owner/$repo#$num\n";
+                } else {
+                  print "#$num\n";
+                }
+              }
+            ' | sort -u || true
           }
 
-          # Validate issue-link formatting in a block of text and report errors.
-          check_formatting() {
-            local text="$1"
-            local location="$2"
-
-            # "Fixes" is for cross-repo references and must not be used here
-            if printf '%s\n' "$text" | grep -qE '^Fixes #[0-9]+'; then
-              add_error "$location: Use 'Closes' instead of 'Fixes' for issues in this repository"
-            fi
-
-            # No colon after the keyword
-            if printf '%s\n' "$text" | grep -qE '^(Closes|Resolves): #[0-9]+'; then
-              add_error "$location: Use 'Closes #NNN' without a colon (not 'Closes: #NNN')"
-            fi
-
-            # Keyword must be capitalized
-            if printf '%s\n' "$text" | grep -qE '^closes #[0-9]+'; then
-              add_error "$location: Use capitalized 'Closes' (not 'closes')"
-            fi
-            if printf '%s\n' "$text" | grep -qE '^resolves #[0-9]+'; then
-              add_error "$location: Use capitalized 'Resolves' (not 'resolves')"
-            fi
+          # Normalize issue references: expand same-repo #NNN to OWNER/REPO#NNN.
+          # Requires $REPO to be set (provided by the workflow env block).
+          normalize_issues() {
+            local issues="$1"
+            while IFS= read -r ref; do
+              [ -z "$ref" ] && continue
+              if [[ "$ref" == \#* ]]; then
+                echo "${REPO}#${ref#\#}"
+              else
+                echo "$ref"
+              fi
+            done <<< "$issues" | sort -u
           }
 
           # --- Check PR description ---
-          check_formatting "$PR_BODY" "PR description"
           PR_ISSUES=$(extract_issues "$PR_BODY")
+          NORM_PR_ISSUES=$(normalize_issues "$PR_ISSUES")
 
           if [ -z "$PR_ISSUES" ]; then
-            add_error "PR description must contain a linked issue using 'Closes #NNN' on its own line"
+            add_error "PR description must contain a linked issue (e.g. 'Closes #NNN' or 'Fixes owner/repo#NNN')"
           fi
 
           # --- Check each commit in the PR ---
@@ -98,58 +102,50 @@ jobs:
               add_error "Failed to retrieve commit message for $sha: $COMMIT_MSG"
               continue
             fi
-            check_formatting "$COMMIT_MSG" "Commit $sha"
 
             ISSUES=$(extract_issues "$COMMIT_MSG")
             if [ -z "$ISSUES" ]; then
-              add_error "Commit $sha must contain a linked issue using 'Closes #NNN' on its own line"
+              add_error "Commit $sha must contain a linked issue (e.g. 'Closes #NNN' or 'Fixes owner/repo#NNN')"
             fi
             ALL_COMMIT_ISSUES="${ALL_COMMIT_ISSUES}"$'\n'"${ISSUES}"
           done < <(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/commits" --jq '.[].sha')
 
           if [ "$FAILED" -eq 0 ]; then
             COMMIT_ISSUES=$(printf '%s\n' "$ALL_COMMIT_ISSUES" | sort -u | grep -v '^$' || true)
+            NORM_COMMIT_ISSUES=$(normalize_issues "$COMMIT_ISSUES")
 
             # --- Verify PR description and commits reference exactly the same issues ---
-            while IFS= read -r issue; do
-              if ! printf '%s\n' "$COMMIT_ISSUES" | grep -q "^${issue}$"; then
-                add_error "Issue #$issue is linked in the PR description but not in the commit messages"
+            while IFS= read -r ref; do
+              [ -z "$ref" ] && continue
+              if ! printf '%s\n' "$NORM_COMMIT_ISSUES" | grep -qF "$ref"; then
+                add_error "Issue $ref is linked in the PR description but not in the commit messages"
               fi
-            done <<< "$PR_ISSUES"
+            done <<< "$NORM_PR_ISSUES"
 
-            while IFS= read -r issue; do
-              if ! printf '%s\n' "$PR_ISSUES" | grep -q "^${issue}$"; then
-                add_error "Issue #$issue is linked in the commit messages but not in the PR description"
+            while IFS= read -r ref; do
+              [ -z "$ref" ] && continue
+              if ! printf '%s\n' "$NORM_PR_ISSUES" | grep -qF "$ref"; then
+                add_error "Issue $ref is linked in the commit messages but not in the PR description"
               fi
-            done <<< "$COMMIT_ISSUES"
-          fi
-
-          if [ "$FAILED" -eq 0 ]; then
-            # --- Enforce Closes vs Resolves based on issue count ---
-            ISSUE_COUNT=$(printf '%s\n' "$PR_ISSUES" | grep -c '.' || true)
-            if [ "$ISSUE_COUNT" -eq 1 ]; then
-              if printf '%s\n' "$PR_BODY" | grep -qE '^Resolves #[0-9]+'; then
-                add_error "PR description: Use 'Closes' (not 'Resolves') when linking a single issue"
-              fi
-            else
-              if printf '%s\n' "$PR_BODY" | grep -qE '^Closes #[0-9]+'; then
-                add_error "PR description: Use 'Resolves' (not 'Closes') when linking multiple issues"
-              fi
-            fi
+            done <<< "$NORM_COMMIT_ISSUES"
           fi
 
           if [ "$FAILED" -eq 0 ]; then
             # --- Verify all linked issues are open ---
-            while IFS= read -r issue; do
-              if ! ISSUE_DATA=$(gh api "repos/$REPO/issues/$issue" 2>&1); then
-                add_error "Issue #$issue could not be retrieved: $ISSUE_DATA"
+            while IFS= read -r ref; do
+              [ -z "$ref" ] && continue
+              [[ "$ref" != *#* ]] && continue
+              issue_repo="${ref%%#*}"
+              issue_num="${ref##*#}"
+              if ! ISSUE_DATA=$(gh api "repos/$issue_repo/issues/$issue_num" 2>&1); then
+                add_error "Issue $ref could not be retrieved: $ISSUE_DATA"
                 continue
               fi
               STATE=$(printf '%s' "$ISSUE_DATA" | jq -r '.state')
               if [ "$STATE" != "open" ]; then
-                add_error "Issue #$issue is not open (current state: $STATE)"
+                add_error "Issue $ref is not open (current state: $STATE)"
               fi
-            done <<< "$PR_ISSUES"
+            done <<< "$NORM_PR_ISSUES"
           fi
 
           # --- Find any existing bot comment with our marker ---
