@@ -2,7 +2,7 @@ name: Pre-triage Pull Request
 
 on:
   pull_request_target:
-    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled, ready_for_review]
     branches:
       - main 
 
@@ -23,7 +23,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          TARGET_REPO: "keycloak/keycloak"
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
@@ -58,14 +57,14 @@ jobs:
             printf '%s\n' "$text" | perl -ne '
               # Match GitHub closing keywords followed by a same-repo (#NNN),
               # cross-repo (owner/repo#NNN), or URL issue reference.
-              while (/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\b:?[ \t]+(?:(?:(?<cro>[\w-]+)\/(?<crr>[\w-]+)#)|#|(?:https:\/\/github\.com\/(?<urlo>[\w-]+)\/(?<urlr>[\w-]+)\/issues\/))(?<num>\d+)\b/gi) {
+              while (/(?i:\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\b):?[ \t]+(?:(?:(?<cro>[\w-]+)\/(?<crr>[\w-]+)#)|#|(?:https:\/\/github\.com\/(?<urlo>[\w-]+)\/(?<urlr>[\w-]+)\/issues\/))(?<num>\d+)\b/g) {
                 my $owner = ($+{cro} // $+{urlo} // "");
                 my $repo  = ($+{crr} // $+{urlr} // "");
                 my $num   = $+{num};
                 if ($owner && $repo) {
                   print "$owner/$repo#$num\n";
                 } else {
-                  print "'$TARGET_REPO'#$num\n";
+                  print "'$REPO'#$num\n";
                 }
               }
             ' | sort -u || true
@@ -103,7 +102,8 @@ jobs:
             COMMIT_ISSUES=$(printf '%s\n' "$ALL_COMMIT_ISSUES" | sort -u | grep -v '^$' || true)
             
             # TODO: determine if there are potential timing issues with querying closingIssuesReferences
-            # - it's not clear that they will be updated prior to when the workflow runs'
+            # - it's not clear that they will be updated prior to when the workflow runs
+            # TODO: there's no PR event for manually linking/unlinking issues, so this check can be out-of-sync after that
             
             # Parse GraphQL closingIssuesReferences into owner/repo#NNN format
             parse_closing_refs() {
@@ -111,6 +111,15 @@ jobs:
               printf '%s\n' "$json" | jq -r '
                 .data.repository.pullRequest.closingIssuesReferences.nodes[]
                 | "\(.repository.owner.login)/\(.repository.name)#\(.number)"
+              ' 2>/dev/null | sort -u || true
+            }
+            
+            # Parse GraphQL closingIssuesReferences into owner/repo#NNN<TAB>closed
+            parse_closing_refs_with_state() {
+              local json="$1"
+              printf '%s\n' "$json" | jq -r '
+                .data.repository.pullRequest.closingIssuesReferences.nodes[]
+                | "\(.repository.owner.login)/\(.repository.name)#\(.number)\t\(.closed)"
               ' 2>/dev/null | sort -u || true
             }
 
@@ -131,6 +140,7 @@ jobs:
                         closingIssuesReferences(first: 50) {
                           nodes {
                             number
+                            closed
                             repository {
                               owner { login }
                               name
@@ -144,79 +154,64 @@ jobs:
             )
 
             CLOSING_ISSUES_REFERENCES=$(parse_closing_refs "$CLOSING_ISSUES_REFERENCES_RAW")
+            CLOSING_ISSUES_WITH_STATE=$(parse_closing_refs_with_state "$CLOSING_ISSUES_REFERENCES_RAW")
             
             if [ "$FAILED" -eq 0 ]; then
               while IFS= read -r ref; do
                 [ -z "$ref" ] && continue
                 issue_repo="${ref%%#*}"
-                if [ "$issue_repo" != "$TARGET_REPO" ]; then
-                  add_error "Issue $ref in the PR description is from a different repository, use a non-closing keyword with it."
+                if [ "$issue_repo" != "$REPO" ]; then
+                  # TODO: uncomment to disallow even manual links to other repos
+                  # add_error "Manually linked issue $ref is from a different repository, please remove it."
                   continue
                 fi
-                if ! printf '%s\n' "$CLOSING_ISSUES_REFERENCES" | grep -Fxq -- "$ref"; then
-                  add_error "Issue $ref is linked in the PR description but not recognized as a linked issue - this is a bug with the PR triage workflow."
-                fi
-              done <<< "$PR_ISSUES"
 
-              # TODO: uncomment to disallow manual issue links to other repositories
-              #while IFS= read -r ref; do
-              #  [ -z "$ref" ] && continue
-              #  if ! printf '%s\n' "$PR_ISSUES" | grep -Fxq -- "$ref"; then
-              #    issue_repo="${ref%%#*}"
-              #    if [ "$issue_repo" != "$TARGET_REPO" ]; then
-              #      add_error "Manually linked issue $ref is from a different repository, please remove it."
-              #    else
-              #      add_error "Issue $ref is a linked GitHub issue but is not in the PR description"
-              #    fi
-              #  fi
-              #done <<< "$CLOSING_ISSUES_REFERENCES"
-            fi
+                # Find matching line: owner/repo#NNN<TAB>true|false
+                state_line=$(printf '%s\n' "$CLOSING_ISSUES_WITH_STATE" | grep -F -- "^$ref"$'\t' || true)
+
+                is_closed="${state_line##*$'\t'}"
+                if [ "$is_closed" = "true" ]; then
+                  add_error "Issue $ref is not open (current state: closed)"
+                  continue
+                fi
+                
+                if ! printf '%s\n' "$PR_ISSUES" | grep -Fxq -- "$ref"; then
+                  add_error "Issue $ref is a manually linked GitHub issue, but it's not in the PR description."
+                fi
+              done <<< "$CLOSING_ISSUES_REFERENCES"
+            fi  
             
             if [ "$FAILED" -eq 0 ]; then
-              # --- Verify PR description and commits reference exactly the same issues ---
               while IFS= read -r ref; do
                 [ -z "$ref" ] && continue
                 issue_repo="${ref%%#*}"
-                if [ "$issue_repo" != "$TARGET_REPO" ]; then
-                  add_error "Issue $ref in the PR description is from a different repository, use a non-closing keyword with it."
+                if [ "$issue_repo" != "$REPO" ]; then
+                  add_error "Issue $ref in the PR description is from a different repository - do not use a closing keyword with it."
                   continue
                 fi
                 if ! printf '%s\n' "$COMMIT_ISSUES" | grep -Fxq -- "$ref"; then
-                  add_error "Issue $ref is linked in the PR description but not in a commit messages"
+                  add_error "Issue $ref is linked in the PR description but not in a commit message"
+                  continue
+                fi
+                if ! printf '%s\n' "$CLOSING_ISSUES_REFERENCES" | grep -Fxq -- "$ref"; then
+                  add_error "$ref is linked in the PR description but is not an issue - do not use a closing keyword with it."
                 fi
               done <<< "$PR_ISSUES"
+            fi
 
+            if [ "$FAILED" -eq 0 ]; then
               while IFS= read -r ref; do
                 [ -z "$ref" ] && continue
                 if ! printf '%s\n' "$PR_ISSUES" | grep -Fxq -- "$ref"; then
                   issue_repo="${ref%%#*}"
-                  if [ "$issue_repo" != "$TARGET_REPO" ]; then
-                    add_error "Issue $ref in the commit messages is from a different repository, use a non-closing keyword with it."
-                  else            
-                    add_error "Issue $ref is linked in the commit messages but not in the PR description"
+                  if [ "$issue_repo" != "$REPO" ]; then
+                    add_error "Issue $ref in the commit messages is from a different repository - do not use a closing keyword with it."
+                  else
+                    # TODO: could check if this is a valid issue - once added to the PR description, it will be validated though
+                    add_error "$ref is linked in the commit messages but not in the PR description."
                   fi
                 fi
               done <<< "$COMMIT_ISSUES"
-            fi
-            
-            if [ "$FAILED" -eq 0 ]; then
-              # --- Verify all linked issues are open ---
-              while IFS= read -r ref; do
-                [ -z "$ref" ] && continue
-                issue_repo="${ref%%#*}"
-                issue_num="${ref##*#}"
-                # NOTE: closing issue references carry a closed flag - not sure if it would
-                # be better than checking like this.
-                # TODO: reopening an issue would require manually rerunning this workflow
-                if ! ISSUE_DATA=$(gh api "repos/$issue_repo/issues/$issue_num" 2>&1); then
-                  add_error "Issue $ref could not be retrieved: $ISSUE_DATA"
-                  continue
-                fi
-                STATE=$(printf '%s' "$ISSUE_DATA" | jq -r '.state')
-                if [ "$STATE" != "open" ]; then
-                  add_error "Issue $ref is not open (current state: $STATE)"
-                fi
-              done <<< "$PR_ISSUES"
             fi
           else
             echo "skipping linked issue check"
