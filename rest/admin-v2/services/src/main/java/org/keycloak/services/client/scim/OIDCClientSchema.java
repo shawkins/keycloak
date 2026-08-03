@@ -1,30 +1,28 @@
 package org.keycloak.services.client.scim;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.keycloak.models.Model;
 import org.keycloak.models.ModelValidationException;
+import org.keycloak.representations.admin.v2.OIDCClientRepresentation;
 import org.keycloak.scim.resource.schema.ModelSchema;
 import org.keycloak.scim.resource.schema.attribute.Attribute;
 
-public final class ClientJpaQuerySchema implements ModelSchema<Model, ClientQueryRepresentation> {
+public final class OIDCClientSchema implements ModelSchema<Model, OIDCClientRepresentation> {
 
-    public static final ClientJpaQuerySchema INSTANCE = new ClientJpaQuerySchema();
+    public static final OIDCClientSchema INSTANCE = new OIDCClientSchema();
 
     public static final Set<String> JPA_FIELDS = Set.of(
             "clientId", "enabled", "description", "displayName", "protocol", "appUrl", "createdTimestamp", "updatedTimestamp");
 
-    public static final List<ModelSchema<Model, ClientQueryRepresentation>> SCHEMAS = List.of(INSTANCE);
-
     private static final String SCHEMA_ID = "urn:keycloak:client-v2:query";
 
-    private final Map<String, Attribute<Model, ClientQueryRepresentation>> attributes;
+    private final Map<String, Attribute<Model, OIDCClientRepresentation>> attributes;
 
-    private ClientJpaQuerySchema() {
-        Map<String, Attribute<Model, ClientQueryRepresentation>> map = new LinkedHashMap<>();
+    private OIDCClientSchema() {
+        Map<String, Attribute<Model, OIDCClientRepresentation>> map = new LinkedHashMap<>();
         map.put("clientId", stringAttribute("clientId", "clientId"));
         map.put("enabled", booleanAttribute("enabled", "enabled"));
         map.put("description", stringAttribute("description", "description"));
@@ -36,23 +34,23 @@ public final class ClientJpaQuerySchema implements ModelSchema<Model, ClientQuer
         this.attributes = Map.copyOf(map);
     }
 
-    private static Attribute<Model, ClientQueryRepresentation> stringAttribute(String queryField, String entityField) {
-        return Attribute.<Model, ClientQueryRepresentation>simple(queryField)
+    private static Attribute<Model, OIDCClientRepresentation> stringAttribute(String queryField, String entityField) {
+        return Attribute.<Model, OIDCClientRepresentation>simple(queryField)
                 .modelAttributeResolver(attribute -> entityField)
                 .build()
                 .get(0);
     }
 
-    private static Attribute<Model, ClientQueryRepresentation> booleanAttribute(String queryField, String entityField) {
-        return Attribute.<Model, ClientQueryRepresentation>simple(queryField)
+    private static Attribute<Model, OIDCClientRepresentation> booleanAttribute(String queryField, String entityField) {
+        return Attribute.<Model, OIDCClientRepresentation>simple(queryField)
                 .modelAttributeResolver(attribute -> entityField)
                 .bool()
                 .build()
                 .get(0);
     }
 
-    private static Attribute<Model, ClientQueryRepresentation> timeAttribute(String queryField, String entityField) {
-        return Attribute.<Model, ClientQueryRepresentation>simple(queryField)
+    private static Attribute<Model, OIDCClientRepresentation> timeAttribute(String queryField, String entityField) {
+        return Attribute.<Model, OIDCClientRepresentation>simple(queryField)
                 .modelAttributeResolver(attribute -> entityField)
                 .timestamp()
                 .build()
@@ -75,27 +73,27 @@ public final class ClientJpaQuerySchema implements ModelSchema<Model, ClientQuer
     }
 
     @Override
-    public Map<String, Attribute<Model, ClientQueryRepresentation>> getAttributes() {
+    public Map<String, Attribute<Model, OIDCClientRepresentation>> getAttributes() {
         return attributes;
     }
 
     @Override
-    public void populate(Model model, ClientQueryRepresentation representation) {
+    public void populate(Model model, OIDCClientRepresentation representation) {
         throw new UnsupportedOperationException("Query schema does not support population");
     }
 
     @Override
-    public void populate(ClientQueryRepresentation representation, Model model) {
+    public void populate(OIDCClientRepresentation representation, Model model) {
         throw new UnsupportedOperationException("Query schema does not support population");
     }
 
     @Override
-    public void validate(ClientQueryRepresentation representation) throws ModelValidationException {
+    public void validate(OIDCClientRepresentation representation) throws ModelValidationException {
         throw new UnsupportedOperationException("Query schema does not support validation");
     }
 
     @Override
-    public Attribute<Model, ClientQueryRepresentation> getAttributeByPath(String path) {
+    public Attribute<Model, OIDCClientRepresentation> getAttributeByPath(String path) {
         return attributes.get(path);
     }
 }

@@ -29,7 +29,7 @@ import org.keycloak.provider.ProviderEventManager;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-public interface ClientModel extends ClientScopeModel, RoleContainerModel,  ProtocolMapperContainerModel, ScopeContainerModel {
+public interface ClientModel extends Model, ClientScopeModel, RoleContainerModel,  ProtocolMapperContainerModel, ScopeContainerModel {
 
     // COMMON ATTRIBUTES
 
@@ -48,6 +48,7 @@ public interface ClientModel extends ClientScopeModel, RoleContainerModel,  Prot
     // Called also during client creation after client is fully initialized (including all attributes etc)
     interface ClientUpdatedEvent extends ProviderEvent {
         ClientModel getUpdatedClient();
+        @Override
         KeycloakSession getKeycloakSession();
     }
 
@@ -55,11 +56,13 @@ public interface ClientModel extends ClientScopeModel, RoleContainerModel,  Prot
         ClientModel getUpdatedClient();
         String getPreviousClientId();
         String getNewClientId();
+        @Override
         KeycloakSession getKeycloakSession();
     }
 
     interface ClientRemovedEvent extends ProviderEvent {
         ClientModel getClient();
+        @Override
         KeycloakSession getKeycloakSession();
     }
 
@@ -82,12 +85,14 @@ public interface ClientModel extends ClientScopeModel, RoleContainerModel,  Prot
      * @see ProviderEventManager
      * @see ClientUpdatedEvent
      */
+    @Deprecated
     void updateClient();
 
     /**
      * Returns client internal ID (UUID).
      * @return
      */
+    @Override
     String getId();
 
     /**
@@ -98,12 +103,16 @@ public interface ClientModel extends ClientScopeModel, RoleContainerModel,  Prot
 
     void setClientId(String clientId);
 
+    @Override
     String getName();
 
+    @Override
     void setName(String name);
 
+    @Override
     String getDescription();
 
+    @Override
     void setDescription(String description);
 
     default String getType() {
@@ -171,12 +180,18 @@ public interface ClientModel extends ClientScopeModel, RoleContainerModel,  Prot
     String getRegistrationToken();
     void setRegistrationToken(String registrationToken);
 
+    @Override
     String getProtocol();
+    @Override
     void setProtocol(String protocol);
 
+    @Override
     void setAttribute(String name, String value);
+    @Override
     void removeAttribute(String name);
+    @Override
     String getAttribute(String name);
+    @Override
     Map<String, String> getAttributes();
 
     /**
@@ -222,6 +237,7 @@ public interface ClientModel extends ClientScopeModel, RoleContainerModel,  Prot
     boolean isServiceAccountsEnabled();
     void setServiceAccountsEnabled(boolean serviceAccountsEnabled);
 
+    @Override
     RealmModel getRealm();
 
     /**

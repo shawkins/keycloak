@@ -20,6 +20,7 @@ import org.keycloak.services.resources.admin.fgap.UserPermissionEvaluator;
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.GROUPS_RESOURCE_TYPE;
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.REALMS_RESOURCE_TYPE;
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.USERS_RESOURCE_TYPE;
+import static org.keycloak.authorization.fgap.AdminPermissionsSchema.CLIENTS_RESOURCE_TYPE;
 
 
 public class DefaultPermissions implements Permissions {
@@ -44,6 +45,7 @@ public class DefaultPermissions implements Permissions {
             case USERS_RESOURCE_TYPE -> evaluateUserPermission(model, scope);
             case GROUPS_RESOURCE_TYPE -> evaluateGroupPermission(model, scope);
             case REALMS_RESOURCE_TYPE -> evaluateRealmPermission(scope);
+            case CLIENTS_RESOURCE_TYPE -> throw new AssertionError();
             default -> false;
         };
     }

@@ -27,7 +27,7 @@ import static org.keycloak.utils.StreamsUtil.closing;
 
 public final class ClientJpaQueryExecutor {
 
-    private static final ClientJpaQueryProvider QUERY_PROVIDER = new ClientJpaQueryProvider();
+    private static final ClientProvider QUERY_PROVIDER = new ClientProvider();
 
     private ClientJpaQueryExecutor() {
     }

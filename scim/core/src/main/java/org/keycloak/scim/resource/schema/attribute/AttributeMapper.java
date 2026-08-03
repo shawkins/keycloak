@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  *
  * @see Attribute
  */
-public class AttributeMapper<M extends Model, R extends ResourceTypeRepresentation> {
+public class AttributeMapper<M extends Model, R> {
 
     private Attribute<M, R> attribute;
     private final TriConsumer<M, String, ?> modelSetter;
