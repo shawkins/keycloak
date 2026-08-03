@@ -82,19 +82,23 @@ public abstract class BaseResourceTypeProvider<M extends Model, R> implements Sc
         if (!hasPermission(model, getRealmResourceType(), AdminPermissionsSchema.MANAGE)) {
             throw new ForbiddenException();
         }
+        
+        if (model == null) {
+            return false;
+        }
 
-        return onDelete(id);
+        return onDelete(model);
     }
 
     protected abstract R onCreate(R resource);
 
     protected abstract R onUpdate(M model, R resource);
 
-    protected abstract boolean onDelete(String id);
+    protected abstract boolean onDelete(M model);
 
     protected abstract Stream<M> getModels(SearchRequest searchRequest);
 
-    protected abstract M getModel(String id);
+    public abstract M getModel(String id);
 
     protected abstract String getRealmResourceType();
 

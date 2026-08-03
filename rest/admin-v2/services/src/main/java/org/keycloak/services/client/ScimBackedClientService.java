@@ -123,11 +123,6 @@ public class ScimBackedClientService implements ClientService {
     }
 
     @Override
-    public Stream<BaseClientRepresentation> deleteClients(RealmModel realm, ClientSearchOptions searchOptions) {
-        return delegate.deleteClients(realm, searchOptions);
-    }
-
-    @Override
     public void deleteClient(RealmModel realm, String clientId) throws ServiceException {
         delegate.deleteClient(realm, clientId);
     }

@@ -102,7 +102,7 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
     }
 
     @Override
-    protected UserModel getModel(String id) {
+    public UserModel getModel(String id) {
         RealmModel realm = session.getContext().getRealm();
         UserModel model = session.users().getUserById(realm, id);
 
@@ -187,11 +187,11 @@ public class UserResourceTypeProvider extends AbstractScimResourceTypeProvider<U
     public Class<User> getResourceType() {
         return User.class;
     }
-
+    
     @Override
-    public boolean onDelete(String id) {
+    protected boolean onDelete(UserModel model) {
         RealmModel realm = session.getContext().getRealm();
-        return session.users().removeUser(realm, getModel(id));
+        return session.users().removeUser(realm, model);
     }
 
     @Override

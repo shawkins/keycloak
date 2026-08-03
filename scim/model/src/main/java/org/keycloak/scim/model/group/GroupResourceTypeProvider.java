@@ -101,7 +101,7 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
     }
 
     @Override
-    protected GroupModel getModel(String id) {
+    public GroupModel getModel(String id) {
         RealmModel realm = session.getContext().getRealm();
         GroupModel model = session.groups().getGroupById(realm, id);
 
@@ -166,11 +166,11 @@ public class GroupResourceTypeProvider extends AbstractScimResourceTypeProvider<
             return session.groups().getGroupsCount(realm, true);
         }
     }
-
+    
     @Override
-    public boolean onDelete(String id) {
+    public boolean onDelete(GroupModel model) {
         RealmModel realm = session.getContext().getRealm();
-        return session.groups().removeGroup(realm, getModel(id));
+        return session.groups().removeGroup(realm, model);
     }
 
     @Override
