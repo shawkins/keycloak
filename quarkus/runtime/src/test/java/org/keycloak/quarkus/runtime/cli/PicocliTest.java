@@ -546,7 +546,7 @@ public class PicocliTest extends AbstractConfigurationTest {
         nonRunningPicocli = pseudoLaunch("start-dev", "--log=syslog", "--log-syslog-max-length=wrong");
         assertEquals(CommandLine.ExitCode.USAGE, nonRunningPicocli.exitCode);
         assertThat(nonRunningPicocli.getErrString(), containsString(
-                "Invalid value for option '--log-syslog-max-length': value wrong not in correct format (regular expression): [0-9]+[BbKkMmGgTtPpEeZzYy]?"));
+                "Invalid value for option '--log-syslog-max-length': No digits in memory size string"));
     }
 
     @Test
@@ -1083,12 +1083,12 @@ public class PicocliTest extends AbstractConfigurationTest {
     public void httpOptimizedSerializers() {
         var nonRunningPicocli = pseudoLaunch("start-dev");
         assertEquals(CommandLine.ExitCode.OK, nonRunningPicocli.exitCode);
-        assertExternalConfigNull("quarkus.rest.jackson.optimization.enable-reflection-free-serializers");
+        assertExternalConfig("quarkus.rest.jackson.optimization.enable-reflection-free-serializers", "true");
         onAfter();
 
-        nonRunningPicocli = pseudoLaunch("start-dev", "--features=http-optimized-serializers");
+        nonRunningPicocli = pseudoLaunch("start-dev", "--features-disabled=http-optimized-serializers");
         assertEquals(CommandLine.ExitCode.OK, nonRunningPicocli.exitCode);
-        assertExternalConfig("quarkus.rest.jackson.optimization.enable-reflection-free-serializers", "true");
+        assertExternalConfig("quarkus.rest.jackson.optimization.enable-reflection-free-serializers", "false");
     }
 
     @Test
