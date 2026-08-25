@@ -29,7 +29,7 @@ import picocli.CommandLine;
 public abstract class AbstractNonServerCommand extends AbstractAutoBuildCommand {
 
     @CommandLine.Mixin
-    OptimizedMixin optimizedMixin = new OptimizedMixin();
+    BuildMixin optimizedMixin = new BuildMixin();
 
     private static EnumSet<OptionCategory> hidden = EnumSet.of(OptionCategory.HTTP, OptionCategory.HTTP_ACCESS_LOG,
             OptionCategory.PROXY, OptionCategory.HOSTNAME_V1, OptionCategory.HOSTNAME_V2, OptionCategory.METRICS,
@@ -49,7 +49,7 @@ public abstract class AbstractNonServerCommand extends AbstractAutoBuildCommand 
     }
 
     @Override
-    protected OptimizedMixin getOptimizedMixin() {
+    protected BuildMixin getBuildMixin() {
         return optimizedMixin;
     }
 

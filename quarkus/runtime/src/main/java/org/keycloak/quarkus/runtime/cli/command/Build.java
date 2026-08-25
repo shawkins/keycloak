@@ -35,6 +35,7 @@ import static org.keycloak.quarkus.runtime.Environment.isDevProfile;
 @Command(name = Build.NAME,
         header = "Creates a new and optimized server image.",
         description = {
+            "%nDEPRECATED, see the --build option",
             "%nCreates a new and optimized server image based on the configuration options passed to this command. Once created, the configuration will be persisted and read during startup without having to pass them over again.",
             "",
             "Consider running this command before running the server in production for an optimal runtime."

@@ -2096,5 +2096,11 @@ public class PicocliTest extends AbstractConfigurationTest {
         KeycloakMain.main(new String[] {"strt"}, nonRunningPicocli);
         assertTrue(nonRunningPicocli.getErrString().contains("Did you mean: kc.sh start or kc.sh start-dev or kc.sh bootstrap-admin?"));
     }
+    
+    @Test
+    public void optimizedAndBuild() {
+        NonRunningPicocli nonRunningPicocli = pseudoLaunch("start", "--optimized", "--build=auto");
+        assertError(nonRunningPicocli, "The '--optimized' flag cannot be used with the '--build' option");
+    }
 
 }

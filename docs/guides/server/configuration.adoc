@@ -263,21 +263,14 @@ If the initial administrator already exists and the environment variables are st
 We recommend optimizing {project_name} to provide faster startup and better memory consumption before deploying {project_name} in a production environment. This section describes how to apply {project_name} optimizations for the best performance and runtime behavior.
 
 === Creating an optimized {project_name} build
-By default, when you use the `start` or `start-dev` command, {project_name} runs a `build` command under the covers for convenience reasons.
+By default, when you use the `start` or `start-dev` command, {project_name} will automatically determine if an augmentation needs built.
 
-This `build` command performs a set of optimizations for the startup and runtime behavior. The build process can take a few seconds. Especially when running {project_name} in containerized environments such as Kubernetes or OpenShift, startup time is important. To avoid losing that time, run a `build` explicitly before starting up, such as a separate step in a CI/CD pipeline.
+An augmentation is set of optimizations for the startup and runtime behavior. The build process can take a few seconds. Especially when running {project_name} in containerized environments such as Kubernetes or OpenShift, startup time is important. To avoid losing that time, run with `--build=then-exit` explicitly before starting up, such as a separate step in a CI/CD pipeline.
 
 ==== First step: Run a build explicitly
-To run a `build`, enter the following command:
+To run a `start`, with the following command:
 
-<@kc.build parameters="<build-options>"/>
-
-This command shows `build options` that you enter. {project_name} distinguishes between **build options**, that are usable when running the `build` command, and **configuration options**, that are usable when starting up the server.
-
-For a non-optimized startup of {project_name}, this distinction has no effect. However, if you run a build before the startup, only a subset of options is available to the build command. The restriction is due to the build options getting persisted into an optimized {project_name} image. For example, configuration for credentials such as `db-password` (which is a configuration option) must not get persisted for security reasons.
-
-[WARNING]
-All build options are persisted in a plain text. Do not store any sensitive data as the build options. This applies across all the available configuration sources, including the KeyStore Config Source. Hence, we also do not recommend to store any build options in a Java keystore. Also, when it comes to the configuration options, we recommend to use the KeyStore Config Source primarily for storing sensitive data. For non-sensitive data you can use the remaining configuration sources.
+<@kc.start parameters="<options> --build=then-exit"/>
 
 Build options are marked in <@links.server id="all-config"/> with a tool icon.
 To find available build options, see https://www.keycloak.org/server/all-config?f=build[All configuration page with build options selected] or enter the following command:
@@ -285,19 +278,19 @@ To find available build options, see https://www.keycloak.org/server/all-config?
 <@kc.build parameters="--help"/>
 
 .Example: Run a `build` to set the database to PostgreSQL before startup
-<@kc.build parameters="--db=postgres"/>
+<@kc.start parameters="--db=postgres --build=then-exit"/>
 
-==== Second step: Start {project_name} using `--optimized`
+==== Second step: Start {project_name} using `--build=resue`
 After a successful build, you can start {project_name} and turn off the default startup behavior by entering the following command:
 
-<@kc.start parameters="--optimized <configuration-options>"/>
+<@kc.start parameters="<options> --build=reuse"/>
 
-The `--optimized` parameter tells {project_name} to assume a pre-built, already optimized {project_name} image is used. As a result, {project_name} avoids checking for and running a build directly at startup, which saves time.
+The `--build=reuse` option tells {project_name} to reuse the already optimized {project_name} augmentation. As a result, {project_name} avoids checking for and running a build directly at startup, which saves time.
 
 You can enter all configuration options at startup; these options are the ones in <@links.server id="all-config"/> that are **not** marked with a tool icon.
 
-* If a build option is found at startup with a value that is equal to the value used when entering the `build`, that option gets silently ignored when you use the `--optimized` parameter.
-* If that option has a different value than the value used when a build was entered, an error occurs. For this value to take effect, run a new `build` before starting.
+* If a build option is found at startup with a value that is equal to the value used when entering the `build`, that option gets silently ignored when you use the `--build=reuse` option.
+* If that option has a different value than the value used when a build was entered, an error occurs. For this value to take effect, run a new `--build=then-exit` before starting.
 
 .Create an optimized build
 
@@ -305,7 +298,7 @@ The following example shows the creation of an optimized build followed by the u
 
 . Set the build option for the PostgreSQL database vendor using the build command
 +
-    <@kc.build parameters="--db=postgres"/>
+    <@kc.start parameters="--db=postgres --build=then-exit"/>
 
 . Set the runtime configuration options for postgres in the `conf/keycloak.conf` file.
 +
@@ -320,7 +313,7 @@ https-certificate-file
 
 . Start the server with the optimized parameter
 +
-    <@kc.start parameters="--optimized"/>
+    <@kc.start parameters="--build=reuse"/>
 
 == Using system variables in the realm configuration
 

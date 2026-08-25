@@ -57,7 +57,7 @@ public final class StartDev extends AbstractAutoBuildCommand {
     }
 
     @Override
-    protected OptimizedMixin getOptimizedMixin() {
+    protected BuildMixin getBuildMixin() {
         return null;
     }
 }

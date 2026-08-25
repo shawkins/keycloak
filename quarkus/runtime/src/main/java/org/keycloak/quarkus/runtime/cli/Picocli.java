@@ -42,6 +42,7 @@ import org.keycloak.quarkus.runtime.KeycloakMain;
 import org.keycloak.quarkus.runtime.Messages;
 import org.keycloak.quarkus.runtime.cli.command.AbstractAutoBuildCommand;
 import org.keycloak.quarkus.runtime.cli.command.AbstractCommand;
+import org.keycloak.quarkus.runtime.cli.command.AbstractCommand.BuildOption;
 import org.keycloak.quarkus.runtime.cli.command.AbstractNonServerCommand;
 import org.keycloak.quarkus.runtime.cli.command.Build;
 import org.keycloak.quarkus.runtime.cli.command.Main;
@@ -230,8 +231,18 @@ public class Picocli {
      */
     public void validateConfig() {
         AbstractCommand abstractCommand = this.getParsedCommand().orElseThrow();
-        if (abstractCommand.isOptimized() && !wasBuildEverRun()) {
-            throw new PropertyException(Messages.optimizedUsedForFirstStartup());
+        if (abstractCommand instanceof AbstractAutoBuildCommand ab) {
+            if (ab.isOptimized()) {
+                if (ab.getBuildOption().isPresent()) {
+                    throw new PropertyException(Messages.optimizedAndBuildOption());                
+                }
+                if (!wasBuildEverRun()) {
+                    throw new PropertyException(Messages.optimizedUsedForFirstStartup());
+                }
+            }
+            if (ab.getBuildOption().filter(BuildOption.REUSE::equals).isPresent() && !wasBuildEverRun()) {
+                throw new PropertyException(Messages.reuseForFirstStartup());
+            }
         }
         warnOnDuplicatedOptionsInCli();
 
@@ -704,7 +715,8 @@ public class Picocli {
             return new IncludeOptions(false, false, false);
         }
         boolean autoBuild = abstractCommand instanceof AbstractAutoBuildCommand;
-        boolean includeBuildTime = abstractCommand instanceof Build || (autoBuild && !abstractCommand.isOptimized());
+        // we don't need to check the getBuildOption here because the build time options will always be included
+        boolean includeBuildTime = abstractCommand instanceof Build || (autoBuild && !((AbstractAutoBuildCommand)abstractCommand).isOptimized());
         return new IncludeOptions(autoBuild, includeBuildTime, autoBuild || includeBuildTime || abstractCommand instanceof ShowConfig);
     }
 
@@ -928,8 +940,8 @@ public class Picocli {
         this.parsedCommand = Optional.ofNullable(command);
         options = getIncludeOptions(command);
 
-        Environment.setRebuildCheck(!Environment.isRebuilt() && command instanceof AbstractAutoBuildCommand
-                && !command.isOptimized());
+        Environment.setRebuildCheck(!Environment.isRebuilt() && command instanceof AbstractAutoBuildCommand ab
+                && !ab.isOptimized() && ab.getBuildOption().filter(BuildOption.REUSE::equals).isEmpty());
 
         String profile = Optional.ofNullable(org.keycloak.common.util.Environment.getProfile())
                 .or(() -> parsedCommand.map(AbstractCommand::getInitProfile)).orElse(Environment.PROD_PROFILE_VALUE);
