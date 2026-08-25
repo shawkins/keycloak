@@ -17,17 +17,39 @@
 
 package org.keycloak.quarkus.runtime.cli.command;
 
-import picocli.CommandLine;
-
 import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
 import static org.keycloak.quarkus.runtime.cli.command.AbstractAutoBuildCommand.OPTIMIZED_BUILD_OPTION_LONG;
 
-public final class OptimizedMixin {
+import java.util.Iterator;
+import java.util.stream.Stream;
+
+import picocli.CommandLine;
+
+public final class BuildMixin {
 
     @CommandLine.Option(names = {OPTIMIZED_BUILD_OPTION_LONG},
-            description = "Use this option to achieve an optimal startup time if you have previously built a server image using the 'build' command.",
+            description = "DEPRECATED: see the --build option instead. Use this option to achieve an optimal startup time if you have previously built a server image using the 'build' command.",
             paramLabel = NO_PARAM_LABEL,
             order = 1)
     boolean optimized;
+
+    AbstractCommand.BuildOption buildOption;
+
+    static class BuildOptionCandidates implements Iterable<String> {
+
+        @Override
+        public Iterator<String> iterator() {
+            return Stream.of(AbstractCommand.BuildOption.values()).map(bo -> bo.key).iterator();
+        }
+
+    }
+
+    @CommandLine.Option(names = {"--build" },
+            description = "Use this option to control how the server augments",
+            paramLabel = NO_PARAM_LABEL,
+            completionCandidates = BuildOptionCandidates.class, order = 1)
+    public void setBuild(String value) {
+        this.buildOption = Stream.of(AbstractCommand.BuildOption.values()).filter(bo -> bo.key.equals(value)).findFirst().orElseThrow();
+    }
 
 }

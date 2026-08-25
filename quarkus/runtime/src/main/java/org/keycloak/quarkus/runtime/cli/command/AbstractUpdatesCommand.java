@@ -33,7 +33,7 @@ import picocli.CommandLine;
 public abstract class AbstractUpdatesCommand extends AbstractAutoBuildCommand {
 
     @CommandLine.Mixin
-    OptimizedMixin optimizedMixin = new OptimizedMixin();
+    BuildMixin optimizedMixin = new BuildMixin();
 
     @Override
     public boolean shouldStart() {
@@ -80,7 +80,7 @@ public abstract class AbstractUpdatesCommand extends AbstractAutoBuildCommand {
     }
 
     @Override
-    protected OptimizedMixin getOptimizedMixin() {
+    protected BuildMixin getBuildMixin() {
         return optimizedMixin;
     }
 

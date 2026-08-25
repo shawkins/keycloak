@@ -17,6 +17,7 @@
 
 package org.keycloak.quarkus.runtime.cli.command;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,6 +50,9 @@ public abstract class AbstractAutoBuildCommand extends AbstractCommand {
         if (isRebuildCheck()) {
             if (requiresReAugmentation()) {
                 runReAugmentation();
+                if (getBuildOption().filter(EnumSet.of(BuildOption.THEN_EXIT)::contains).isPresent()) {
+                    return Optional.of(0); // will let the calling script exit
+                }
                 return Optional.of(REBUILT_EXIT_CODE);
             }
             // clear the check, and change to the command runtime profile
@@ -63,7 +67,10 @@ public abstract class AbstractAutoBuildCommand extends AbstractCommand {
         return Optional.empty();
     }
 
-    static boolean requiresReAugmentation() {
+    boolean requiresReAugmentation() {
+        if (getBuildOption().filter(EnumSet.of(BuildOption.THEN_EXIT, BuildOption.THEN_RUN)::contains).isPresent()) {
+            return true;
+        }
         Map<String, String> rawPersistedProperties = Configuration.getRawPersistedProperties();
         if (rawPersistedProperties.isEmpty()) {
             return true; // no build yet
@@ -125,11 +132,14 @@ public abstract class AbstractAutoBuildCommand extends AbstractCommand {
         return helpAllMixin != null ? helpAllMixin.allOptions : false;
     }
 
-    abstract protected OptimizedMixin getOptimizedMixin();
+    abstract protected BuildMixin getBuildMixin();
 
-    @Override
     public boolean isOptimized() {
-        return Optional.ofNullable(getOptimizedMixin()).map(o -> o.optimized).orElse(false);
+        return Optional.ofNullable(getBuildMixin()).map(o -> o.optimized).orElse(false);
+    }
+    
+    public Optional<BuildOption> getBuildOption() {
+        return Optional.ofNullable(getBuildMixin()).map(o -> o.buildOption);
     }
 
     @Override

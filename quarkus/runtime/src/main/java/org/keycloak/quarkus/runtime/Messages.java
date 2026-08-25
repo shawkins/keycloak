@@ -52,6 +52,14 @@ public final class Messages {
     public static String optimizedUsedForFirstStartup() {
         return String.format("The '%s' flag was used for first ever server start. Please don't use this flag for the first startup or use '%s %s' to build the server first.", AbstractAutoBuildCommand.OPTIMIZED_BUILD_OPTION_LONG, Environment.getCommand(), Build.NAME);
     }
+    
+    public static String optimizedAndBuildOption() {
+        return String.format("The '%s' flag cannot be used with the '--build' option", AbstractAutoBuildCommand.OPTIMIZED_BUILD_OPTION_LONG);
+    }
+    
+    public static String reuseForFirstStartup() {
+        return String.format("'--build=reuse' was used for the first ever start of the server - it is not yet properly augmented");
+    }
 
     public static String invalidLogLevel(String logLevel) {
         Set<String> values = Arrays.stream(Logger.Level.values()).map(Logger.Level::name).map(String::toLowerCase).collect(Collectors.toSet());

@@ -39,7 +39,7 @@ public final class Start extends AbstractAutoBuildCommand {
     public static final String NAME = "start";
 
     @CommandLine.Mixin
-    OptimizedMixin optimizedMixin = new OptimizedMixin();
+    BuildMixin optimizedMixin = new BuildMixin();
 
     @CommandLine.Mixin
     ImportRealmMixin importRealmMixin;
@@ -62,7 +62,7 @@ public final class Start extends AbstractAutoBuildCommand {
     }
 
     @Override
-    protected OptimizedMixin getOptimizedMixin() {
+    protected BuildMixin getBuildMixin() {
         return optimizedMixin;
     }
 

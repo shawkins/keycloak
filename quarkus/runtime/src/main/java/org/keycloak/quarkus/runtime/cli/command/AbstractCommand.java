@@ -33,6 +33,17 @@ import static org.keycloak.quarkus.runtime.Messages.cliExecutionError;
 
 public abstract class AbstractCommand implements Callable<Integer> {
 
+    public enum BuildOption {
+    
+        AUTO("auto"), REUSE("reuse"), THEN_EXIT("then-exit"), THEN_RUN("then-run");
+    
+        String key;
+    
+        BuildOption(String key) {
+            this.key = key;
+        }
+    }
+
     @Spec
     protected CommandSpec spec; // will be null for "start --optimized"
     protected Picocli picocli;
@@ -128,13 +139,6 @@ public abstract class AbstractCommand implements Callable<Integer> {
      * @return true if a form of help all was used. Only valid if this is the parsed command.
      */
     public abstract boolean isHelpAll();
-
-    /**
-     * @return true if --optimized was used. Only valid if this is the parsed command.
-     */
-    public boolean isOptimized() {
-        return false;
-    }
 
     /**
      * Controls whether the command actually starts the server
