@@ -16,23 +16,27 @@
  */
 package org.keycloak.quarkus.runtime.services.health;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import org.eclipse.microprofile.context.ManagedExecutor;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
+import org.eclipse.microprofile.health.Readiness;
+import org.keycloak.common.util.DurationConverter;
+import org.keycloak.config.DatabaseOptions;
 
 import io.quarkus.agroal.runtime.health.DataSourceHealthCheck;
 import io.smallrye.context.api.ManagedExecutorConfig;
 import io.smallrye.health.api.AsyncHealthCheck;
 import io.smallrye.mutiny.Uni;
-import org.eclipse.microprofile.context.ManagedExecutor;
-import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
-import org.eclipse.microprofile.health.Readiness;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * Keycloak Healthcheck Readiness Probe.
@@ -63,11 +67,15 @@ public class KeycloakReadyHealthCheck implements AsyncHealthCheck {
     ManagedExecutor executor;
 
     private final AtomicReference<Instant> failingSince = new AtomicReference<>();
+    private Duration timeout;
 
     @Override
     public Uni<HealthCheckResponse> call() {
         Uni<HealthCheckResponse> uni = Uni.createFrom().item(this::syncCheck);
-        return uni.runSubscriptionOn(executor);
+        if (timeout == null) {
+            timeout = DurationConverter.parseDuration(DatabaseOptions.DB_POOL_ACQUISITION_TIMEOUT.getKey()).multipliedBy(2);
+        }
+        return uni.runSubscriptionOn(executor).ifNoItem().after(timeout).failWith(() -> new TimeoutException("Health check did not complete in " + timeout));
     }
 
     private HealthCheckResponse syncCheck() {
