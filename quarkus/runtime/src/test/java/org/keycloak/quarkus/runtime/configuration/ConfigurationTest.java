@@ -100,10 +100,10 @@ public class ConfigurationTest extends AbstractConfigurationTest {
 
     @Test
     public void testKeycloakConfPlaceholder() {
-        assertEquals("info", createConfig().getRawValue("kc.log-level"));
+        assertEquals("info", createConfig().getConfigValue("kc.log-level").getValue());
         assertTrue(Configuration.getConfig().isPropertyPresent("quarkus.log.category.\"io.k8s\".level"));
         putEnvVar("SOME_LOG_LEVEL", "debug");
-        assertEquals("debug", createConfig().getRawValue("kc.log-level"));
+        assertEquals("debug", createConfig().getConfigValue("kc.log-level").getValue());
         SmallRyeConfig config = ConfigBuilderCustomizer.addInterceptors(ConfigUtils.emptyConfigBuilder().setAddDefaultSources(false).addDiscoveredSources()).build();
         assertNull(Expressions.withoutExpansion(() -> config.getConfigValue("kc.log-level")).getValue());
     }
@@ -1156,9 +1156,26 @@ public class ConfigurationTest extends AbstractConfigurationTest {
     }
     
     @Test
-    public void testSniNotSetViaConfig() {
-        // SNI is enabled via KeycloakHttpServerOptionsCustomizer, not via config property
+    public void testSniEnabledForDirectHttps() {
         var config = createConfigFromCliArguments("--https-certificate-file=\\some\\file");
+        assertEquals("true", config.getConfigValue(HttpPropertyMappers.QUARKUS_HTTPS_SNI).getValue());
+    }
+
+    @Test
+    public void testSniDisabledWithForwardedProxyHeaders() {
+        var config = createConfigFromCliArguments("--https-certificate-file=/cert.pem", "--proxy-headers=forwarded");
+        assertEquals("false", config.getConfigValue(HttpPropertyMappers.QUARKUS_HTTPS_SNI).getValue());
+    }
+
+    @Test
+    public void testSniDisabledWithXForwardedProxyHeaders() {
+        var config = createConfigFromCliArguments("--https-certificate-file=/cert.pem", "--proxy-headers=xforwarded");
+        assertEquals("false", config.getConfigValue(HttpPropertyMappers.QUARKUS_HTTPS_SNI).getValue());
+    }
+
+    @Test
+    public void testSniNotSetWithoutHttps() {
+        var config = createConfigFromCliArguments();
         assertNull(config.getConfigValue(HttpPropertyMappers.QUARKUS_HTTPS_SNI).getValue());
     }
 

@@ -29,9 +29,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.quarkiverse.operatorsdk</groupId>
+                <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
-                <version>7.8.1-SNAPSHOT</version>
+                <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
